@@ -1,0 +1,16 @@
+﻿name: Validate
+on: 
+  workflow_dispatch:
+  pull_request:
+  
+jobs:
+  validate:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Validate
+      run: .\build\vsts-validate.ps1
+      shell: pwsh
