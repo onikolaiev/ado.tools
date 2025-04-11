@@ -21,7 +21,7 @@ Write-Host "The user running is: $($env:UserName)"
 Write-Host "Installing required PowerShell modules" -ForegroundColor Yellow
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 Install-PackageProvider Nuget –force –verbose -ErrorAction SilentlyContinue
-$modules = @("PowerShellGet", "PSFramework", "PSScriptAnalyzer", "PSNotification", "dbatools")
+$modules = @("PowerShellGet", "PSFramework", "PSScriptAnalyzer", "PSNotification", "dbatools", "ado.core")
 #Register-PSRepository -Default -Verbose
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
 $modules | ForEach-Object {

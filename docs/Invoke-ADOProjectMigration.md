@@ -5,42 +5,37 @@ online version:
 schema: 2.0.0
 ---
 
-# Get-ADOWorkItemType
+# Invoke-ADOProjectMigration
 
 ## SYNOPSIS
-Retrieves a single work item type in a process.
+Migrates a project from a source Azure DevOps organization to a target Azure DevOps organization.
 
 ## SYNTAX
 
 ```
-Get-ADOWorkItemType [-Organization] <String> [-Token] <String> [-ProcessId] <String> [-WitRefName] <String>
- [[-Expand] <String>] [[-ApiVersion] <String>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+Invoke-ADOProjectMigration [-SourceOrganization] <String> [-TargetOrganization] <String>
+ [-SourceProjectName] <String> [-TargetProjectName] <String> [-SourceOrganizationToken] <String>
+ [-TargetOrganizationToken] <String> [[-ApiVersion] <String>] [-ProgressAction <ActionPreference>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-This function uses the \`Invoke-ADOApiRequest\` function to call the Azure DevOps REST API and retrieve a single work item type in a process.
-It supports optional parameters to expand specific properties of the work item type.
+This function facilitates the migration of a project from one Azure DevOps organization to another. 
+It retrieves the source project details, validates its existence, and prepares for migration to the target organization.
 
 ## EXAMPLES
 
-### EXAMPLE 1
-```
-Get-ADOWorkItemType -Organization "fabrikam" -Token "my-token" -ProcessId "c5ef8a1b-4f0d-48ce-96c4-20e62993c218" -WitRefName "MyNewAgileProcess.ChangeRequest"
-```
-
-Retrieves the specified work item type in the given process.
-
-### EXAMPLE 2
-```
-Get-ADOWorkItemType -Organization "fabrikam" -Token "my-token" -ProcessId "c5ef8a1b-4f0d-48ce-96c4-20e62993c218" -WitRefName "MyNewAgileProcess.ChangeRequest" -Expand "layout"
+### Example 1
+```powershell
+PS C:\> {{ Add example code here }}
 ```
 
-Retrieves the specified work item type with the layout property expanded.
+{{ Add example description here }}
 
 ## PARAMETERS
 
-### -Organization
-The name of the Azure DevOps organization.
+### -SourceOrganization
+The name of the source Azure DevOps organization.
 
 ```yaml
 Type: String
@@ -54,8 +49,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Token
-The authentication token for accessing Azure DevOps.
+### -TargetOrganization
+The name of the target Azure DevOps organization.
 
 ```yaml
 Type: String
@@ -69,8 +64,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -ProcessId
-The ID of the process.
+### -SourceProjectName
+The name of the project in the source organization to be migrated.
 
 ```yaml
 Type: String
@@ -84,8 +79,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -WitRefName
-The reference name of the work item type.
+### -TargetProjectName
+The name of the project in the target organization where the source project will be migrated.
 
 ```yaml
 Type: String
@@ -99,16 +94,31 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Expand
-Optional parameter to expand specific properties of the work item type (e.g., behaviors, layout, states).
+### -SourceOrganizationToken
+The authentication token for accessing the source Azure DevOps organization.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases:
 
-Required: False
+Required: True
 Position: 5
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -TargetOrganizationToken
+The authentication token for accessing the target Azure DevOps organization.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: True
+Position: 6
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -124,7 +134,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 6
+Position: 7
 Default value: $Script:ADOApiVersion
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -153,7 +163,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## OUTPUTS
 
 ## NOTES
-This function follows PSFramework best practices for logging and error handling.
+This function uses PSFramework for logging and exception handling.
 
 Author: Oleksandr Nikolaiev (@onikolaiev)
 
