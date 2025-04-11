@@ -231,7 +231,7 @@ function Invoke-ADOProjectMigration {
         $sourceWitList | ForEach-Object {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing behaviors for work item type '$($wit.name)'."
-            $targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
+            #$targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
             $sourceBehaviors = (Get-ADOProcessBehaviorList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand "fields")
             $targetBehaviors = (Get-ADOProcessBehaviorList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand "fields")
             $sourceBehaviors | ForEach-Object {
