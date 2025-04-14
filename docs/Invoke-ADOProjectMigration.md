@@ -20,17 +20,29 @@ Invoke-ADOProjectMigration [-SourceOrganization] <String> [-TargetOrganization] 
 ```
 
 ## DESCRIPTION
-This function facilitates the migration of a project from one Azure DevOps organization to another. 
+This function facilitates the migration of a project from one Azure DevOps organization to another.
 It retrieves the source project details, validates its existence, and prepares for migration to the target organization.
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$sourceOrg = "sourceOrg"
+$targetOrg = "targetOrg"
+$sourceProjectName = "sourceProject"
+$targetProjectName = "targetProject"
+$sourceOrgToken = "sourceOrgToken"
+$targetOrgToken = "targetOrgToken"
 ```
 
-{{ Add example description here }}
+Invoke-ADOProjectMigration -SourceOrganization $sourceOrg \`
+                           -TargetOrganization $targetOrg \`
+                           -SourceProjectName $sourceProjectName \`
+                           -TargetProjectName $targetProjectName \`
+                           -SourceOrganizationToken $sourceOrgToken \`
+                           -TargetOrganizationToken $targetOrgToken
+                         
+This example migrates the project "sourceProject" from the organization "sourceOrg" to the organization "targetOrg".
 
 ## PARAMETERS
 
