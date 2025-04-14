@@ -539,7 +539,8 @@ function Invoke-ADOProjectMigration {
         # Split the work item IDs into batches of 200
         Write-PSFMessage -Level Host -Message "Splitting work item IDs into batches of 200."
         $witListBatches = [System.Collections.ArrayList]::new()
-        $result.workItems.id | ForEach-Object -Begin { $batch = @() } -Process {
+        $batch = @()
+        $result.workItems.id | ForEach-Object -Process {
             $batch += $_
             if ($batch.Count -eq 200) {
                 Write-PSFMessage -Level Verbose -Message "Adding a batch of 200 work item IDs."
@@ -584,8 +585,6 @@ function Invoke-ADOProjectMigration {
         # Log the work items retrieved
         Write-PSFMessage -Level Host -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
         $sourceWorkItemsList | Format-Table -AutoSize
-
-        $sourceWorkItem = $sourceWorkItemsList | Where-Object { $_."System.Id" -eq 2437 }
         $targetWorkItemList = @{}
 
         # Process each work item
