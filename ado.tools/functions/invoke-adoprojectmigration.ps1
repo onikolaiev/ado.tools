@@ -526,116 +526,15 @@ function Invoke-ADOProjectMigration {
             Write-PSFMessage -Level Host -Message "Project '$($targetProjectName)' successfully updated in target organization '$($targetOrganization)'."
         }
 
-
         #PROCESSING WORK ITEM
-        Write-PSFMessage -Level Host -Message "Executing WIQL query to retrieve work items from project '$sourceProjectName' in organization '$sourceOrganization'."
-
-        $query = "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '$sourceProjectName' AND [System.WorkItemType] NOT IN ('Test Suite', 'Test Plan','Shared Steps','Shared Parameter','Feedback Request') ORDER BY [System.ChangedDate] asc"
-        $result = Invoke-ADOWiqlQueryByWiql -Organization $sourceOrganization -Token $sourceOrganizationtoken -Project $sourceProjectName -Query $query
-
-        # Log the number of work items retrieved
-        Write-PSFMessage -Level Host -Message "Retrieved $($result.workItems.Count) work items from the WIQL query."
-
-        # Split the work item IDs into batches of 200
-        Write-PSFMessage -Level Host -Message "Splitting work item IDs into batches of 200."
-        $witListBatches = [System.Collections.ArrayList]::new()
-        $batch = @()
-        $result.workItems.id | ForEach-Object -Process {
-            $batch += $_
-            if ($batch.Count -eq 200) {
-                Write-PSFMessage -Level Verbose -Message "Adding a batch of 200 work item IDs."
-                $null = $witListBatches.Add($batch)
-                $batch = @()
-            }
-        } -End {
-            if ($batch.Count -gt 0) {
-                Write-PSFMessage -Level Verbose -Message "Adding the final batch of $($batch.Count) work item IDs."
-                $null = $witListBatches.Add($batch)
-            }
-        }
-
-        # Log the number of batches created
-        Write-PSFMessage -Level Host -Message "Created $($witListBatches.Count) batches of work item IDs."
-
-        $wiResult = @()
-        # Process each batch
-        foreach ($witBatch in $witListBatches) {
-            Write-PSFMessage -Level Host -Message "Processing a batch of $($witBatch.Count) work item IDs."
-            $wiResult += Get-ADOWorkItemsBatch -Organization $sourceOrganization -Token $sourceOrganizationtoken -Project $sourceProjectName -Ids $witBatch -Fields @("System.Id", "System.Title", "System.Description", "System.WorkItemType", "System.State", "System.Parent")
-        }
-
-        # Log the number of work items retrieved in detail
-        Write-PSFMessage -Level Host -Message "Retrieved detailed information for $($wiResult.Count) work items."
-
-        $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
-            [PSCustomObject]@{
-                "System.Id"           = $_."System.Id"
-                "System.WorkItemType" = $_."System.WorkItemType"
-                "System.Description"  = $_."System.Description"
-                "System.State"        = $_."System.State"
-                "System.Title"        = $_."System.Title"
-                "System.Parent"       = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
-                                            $_."System.Parent"
-                                        } else {
-                                            0
-                                        }
-            }
-        }
-
-        # Log the work items retrieved
-        Write-PSFMessage -Level Host -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
-        $sourceWorkItemsList | Format-Table -AutoSize
+        $sourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken)
         $targetWorkItemList = @{}
-
-        # Process each work item
-        $sourceWorkItemsList | ForEach-Object {
+     
+        $sourceWorkItemsList |  ForEach-Object {
             $sourceWorkItem = $_
-            Write-PSFMessage -Level Host -Message "Processing work item ID: $($sourceWorkItem.'System.Id'). Title: $($sourceWorkItem.'System.Title')."
-
-            $body = @(
-                @{
-                    op    = "add"
-                    path  = "/fields/System.Title"
-                    value = "$($sourceWorkItem."System.Title")"
-                }
-                @{
-                    op    = "add"
-                    path  = "/fields/System.Description"
-                    value = "$($sourceWorkItem."System.Description")"
-                }
-                @{
-                    op    = "add"
-                    path  = "/fields/Custom.RelatedWorkitemId"
-                    value = "$($sourceWorkItem."System.ID")"
-                }
-                @{
-                    op    = "add"
-                    path  = "/fields/System.State"
-                    value = "$($sourceWorkItem."System.State")"
-                }
-                if ($sourceWorkItem."System.Parent") {
-                    @{
-                        op    = "add"
-                        path  = "/relations/-"
-                        value = @{
-                            rel="System.LinkTypes.Hierarchy-Reverse"
-                            url="$($targetWorkItemList[$sourceWorkItem."System.Parent"])"
-                            attributes= @{
-                                comment= "Making a new link for the dependency"
-                            }
-                        }
-                    }
-                }
-            )
-            $body = $body | ConvertTo-Json -Depth 10
-
-            # Log the creation of the target work item
-            Write-PSFMessage -Level Host -Message "Creating target work item for source work item ID: $($sourceWorkItem.'System.Id')."
-            $targetWorkItem = Add-ADOWorkItem -Organization $targetOrganization -Token $targetOrganizationtoken -Project $targetProjectName -Type "`$$($sourceWorkItem."System.WorkItemType")" -Body $body
-
-            # Log the successful creation of the target work item
-            Write-PSFMessage -Level Verbose -Message "Created target work item with URL: $($targetWorkItem.url) for source work item ID: $($sourceWorkItem.'System.Id')."
-            $targetWorkItemList[$($sourceWorkItem."System.ID")] = $targetWorkItem.url
+            Invoke-ADOWorkItemsProcessing -SourceWorkItem $sourceWorkItem -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken -TargetOrganization $targetOrganization `
+            -TargetProjectName $targetProjectName -TargetToken $targetOrganizationtoken `
+            -TargetWorkItemList ([ref]$targetWorkItemList) -ApiVersion $ApiVersion
         }
 
         # Log the completion of the migration process
