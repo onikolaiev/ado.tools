@@ -163,7 +163,7 @@ function Invoke-ADOProjectMigration {
         $relatedWorkitemIdFieldName = "RelatedWorkitemId"
         $relatedWorkitemIdReferenceName = "Custom.$relatedWorkitemIdFieldName"
         $body = @{
-            name = $referenceWorkitemId
+            name = $relatedWorkitemIdFieldName
             referenceName = "$relatedWorkitemIdReferenceName"
             description = ""
             type = "string"
