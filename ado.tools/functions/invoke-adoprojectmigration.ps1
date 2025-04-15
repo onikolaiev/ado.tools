@@ -177,7 +177,7 @@ function Invoke-ADOProjectMigration {
         
         $body = $body | ConvertTo-Json -Depth 10
         
-        Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
+        $null = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
 
         Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard" 
         ## PROCESSING WORK ITEM TYPES
@@ -542,6 +542,11 @@ function Invoke-ADOProjectMigration {
      
         $sourceWorkItemsList |  ForEach-Object {
             $sourceWorkItem = $_
+            $targetWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $targetOrganization -SourceProjectName $targetProjectName -SourceToken $targetOrganizationtoken -Fields @("System.Id", "System.Title", "System.Description", "System.WorkItemType", "System.State", "System.Parent", "Custom.SourceWorkitemId"))
+            $workItemExists = $targetWorkItemsList | Where-Object 'Custom.SourceWorkitemId' -EQ $sourceWorkItem.'System.Id'
+            if ($workItemExists) {
+                continue;
+            }
             Invoke-ADOWorkItemsProcessing -SourceWorkItem $sourceWorkItem -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken -TargetOrganization $targetOrganization `
             -TargetProjectName $targetProjectName -TargetToken $targetOrganizationtoken `
             -TargetWorkItemList ([ref]$targetWorkItemList) -ApiVersion $ApiVersion

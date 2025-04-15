@@ -1,32 +1,30 @@
-
 <#
-    .SYNOPSIS
-        Retrieves and processes work items from a source Azure DevOps project.
-        
-    .DESCRIPTION
-        This function retrieves work items from a source Azure DevOps project using a WIQL query, splits them into batches of 200, and processes them to extract detailed information.
-        
-    .PARAMETER SourceOrganization
-        The name of the source Azure DevOps organization.
-        
-    .PARAMETER SourceProjectName
-        The name of the source Azure DevOps project.
-        
-    .PARAMETER SourceToken
-        The personal access token (PAT) for the source Azure DevOps organization.
-        
-    .PARAMETER ApiVersion
-        (Optional) The API version to use. Default is `7.1`.
-        
-    .EXAMPLE
-        # Example: Retrieve and process work items from a source project
+.SYNOPSIS
+Retrieves and processes work items from a source Azure DevOps project.
 
-        Get-ADOSourceWorkItemsList -SourceOrganization "source-org" -SourceProjectName "source-project" -SourceToken "source-token"
-        
-    .NOTES
-        This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
-        
-        Author: Oleksandr Nikolaiev (@onikolaiev)
+.DESCRIPTION
+This function retrieves work items from a source Azure DevOps project using a WIQL query, splits them into batches of 200, and processes them to extract detailed information.
+
+.PARAMETER SourceOrganization
+The name of the source Azure DevOps organization.
+
+.PARAMETER SourceProjectName
+The name of the source Azure DevOps project.
+
+.PARAMETER SourceToken
+The personal access token (PAT) for the source Azure DevOps organization.
+
+.PARAMETER ApiVersion
+(Optional) The API version to use. Default is `7.1`.
+
+.EXAMPLE
+# Example: Retrieve and process work items from a source project
+Get-ADOSourceWorkItemsList -SourceOrganization "source-org" -SourceProjectName "source-project" -SourceToken "source-token"
+
+.NOTES
+This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
+
+Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
 
 function Get-ADOSourceWorkItemsList {
@@ -42,7 +40,10 @@ function Get-ADOSourceWorkItemsList {
         [string]$SourceToken,
 
         [Parameter(Mandatory = $false)]
-        [string]$ApiVersion = $Script:ADOApiVersion
+        [Array]$Fields = @("System.Id", "System.Title", "System.Description", "System.WorkItemType", "System.State", "System.Parent"),
+
+        [Parameter(Mandatory = $false)]
+        [string]$ApiVersion = "7.1"
     )
 
     begin {
@@ -86,7 +87,7 @@ function Get-ADOSourceWorkItemsList {
             # Process each batch
             foreach ($witBatch in $witListBatches) {
                 Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
-                $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields @("System.Id", "System.Title", "System.Description", "System.WorkItemType", "System.State", "System.Parent") -ApiVersion $ApiVersion
+                $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
             }
 
             # Log the number of work items retrieved in detail
@@ -95,16 +96,17 @@ function Get-ADOSourceWorkItemsList {
             # Format work items into a list
             $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
                 [PSCustomObject]@{
-                    "System.Id"           = $_."System.Id"
-                    "System.WorkItemType" = $_."System.WorkItemType"
-                    "System.Description"  = $_."System.Description"
-                    "System.State"        = $_."System.State"
-                    "System.Title"        = $_."System.Title"
-                    "System.Parent"       = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
-                                                $_."System.Parent"
-                                            } else {
-                                                0
-                                            }
+                    "System.Id"                 = $_."System.Id"
+                    "System.WorkItemType"       = $_."System.WorkItemType"
+                    "System.Description"        = $_."System.Description"
+                    "System.State"              = $_."System.State"
+                    "System.Title"              = $_."System.Title"
+                    "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
+                    "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
+                                                    $_."System.Parent"
+                                                } else {
+                                                    0
+                                                }
                 }
             }
 
