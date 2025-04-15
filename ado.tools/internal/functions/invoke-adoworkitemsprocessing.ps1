@@ -75,7 +75,7 @@ function Invoke-ADOWorkItemsProcessing {
         [ref]$TargetWorkItemList,
 
         [Parameter(Mandatory = $false)]
-        [string]$ApiVersion = "7.1"
+        [string]$ApiVersion = $Script:ADOApiVersion
     )
 
     begin {
@@ -113,7 +113,7 @@ function Invoke-ADOWorkItemsProcessing {
             if ($SourceWorkItem."System.Parent") {
                 if (-not $TargetWorkItemList.Value[$SourceWorkItem."System.Parent"]) {
                     Write-PSFMessage -Level Verbose -Message "Parent work item ID $($SourceWorkItem.'System.Parent') not found in target work item list. Creating it..."
-                    $SourceWorkItemsList = (Get-SourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken)
+                    $SourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken)
                     $parentWorkItem = $SourceWorkItemsList | Where-Object { $_."System.Id" -eq $SourceWorkItem.'System.Parent' }
                     # Create the parent work item first
                     Invoke-ADOWorkItemsProcessing -SourceWorkItem $parentWorkItem -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -TargetOrganization $TargetOrganization `

@@ -83,8 +83,8 @@ function Invoke-ADOProjectMigration {
 
         # Log start of migration
         Write-PSFMessage -Level Host -Message "Starting migration from source organization '$sourceOrganization' to target organization '$targetOrganization'."
-
-        ## GETTING THE SOURCE PROJECT INFORMATION
+        Convert-FSCPSTextToAscii -Text "Start migration" -Font "Standard" 
+        ## GETTING THE SOURCE PROJECT INFORMATION 
         Write-PSFMessage -Level Host -Message "Fetching source project '$sourceProjectName' from organization '$sourceOrganization'."
         $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
         if (-not $sourceProjecttmp) {
@@ -99,6 +99,7 @@ function Invoke-ADOProjectMigration {
 
         Write-PSFMessage -Level Host -Message "Source project process: '$($sourceProjectProcess.name)' (ID: $($sourceProjectProcess.typeId))."
 
+        Convert-FSCPSTextToAscii -Text "Migrate processes.." -Font "Standard" 
         ### PROCESSING PROCESS
         Write-PSFMessage -Level Host -Message "Checking if target process '$($sourceProjectProcess.name)' exists in target organization '$targetOrganization'."
         $targetProjectProcess = (Get-ADOProcessList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion).Where({$_.name -eq $sourceProjectProcess.name})
@@ -119,7 +120,7 @@ function Invoke-ADOProjectMigration {
         } else {
             Write-PSFMessage -Level Host -Message "Target process '$($sourceProjectProcess.name)' already exists in target organization '$targetOrganization'."
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate wit fields.." -Font "Standard" 
         ## PROCESSING WIT FIELDS
         Write-PSFMessage -Level Host -Message "Fetching custom work item fields from source organization '$sourceOrganization'."
         $sourceWitFields = (Get-ADOWitFieldList -Organization $sourceOrganization -Token $sourceOrganizationtoken -Expand "extensionFields" -ApiVersion $ApiVersion ).Where({$_.referenceName.startswith("Custom.")})
@@ -177,7 +178,8 @@ function Invoke-ADOProjectMigration {
         $body = $body | ConvertTo-Json -Depth 10
         
         Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
-        
+
+        Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard" 
         ## PROCESSING WORK ITEM TYPES
         Write-PSFMessage -Level Host -Message "Fetching custom work item types from source process '$($sourceProjectProcess.name)'."
         $sourceWitList = (Get-ADOWorkItemTypeList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
@@ -211,6 +213,7 @@ function Invoke-ADOProjectMigration {
         }
         $targetWitList = (Get-ADOWorkItemTypeList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
 
+        Convert-FSCPSTextToAscii -Text "Migrate fields.." -Font "Standard" 
         ## Process Fields
         Write-PSFMessage -Level Host -Message "Starting to process custom fields for work item types."
         $sourceWitList | ForEach-Object {
@@ -243,7 +246,7 @@ function Invoke-ADOProjectMigration {
                 }
             } 
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate behaviors.." -Font "Standard" 
         ## Process Behaviors
         Write-PSFMessage -Level Host -Message "Starting to process behaviors for work item types."
         $sourceWitList | ForEach-Object {
@@ -274,7 +277,7 @@ function Invoke-ADOProjectMigration {
                 }
             }
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate picklists.." -Font "Standard" 
         ## Process Picklists
         Write-PSFMessage -Level Host -Message "Starting to process picklists."
         $sourcePicklists = (Get-ADOPickListList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion)
@@ -300,7 +303,7 @@ function Invoke-ADOProjectMigration {
                 Write-PSFMessage -Level Host -Message "Picklist '$($picklist.name)' already exists in target process. Skipping."
             }
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate states.." -Font "Standard" 
         ## Process States
         Write-PSFMessage -Level Host -Message "Starting to process states for work item types."
         $sourceWitList | ForEach-Object {
@@ -331,11 +334,17 @@ function Invoke-ADOProjectMigration {
                 }
 
                 if ($sourceState.hidden) { 
-                    Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
-                    $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true"
-                }   
+                        try {
+                            Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
+                            $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true"
+                        }
+                        catch {
+                            Write-PSFMessage -Level Warning -Message "Failed to hide state '$($sourceState.name)' in target process. The state is already hidden"    
+                        }
+                    }   
             }
         }
+        Convert-FSCPSTextToAscii -Text "Migrate rules.." -Font "Standard" 
         ## Process Rules
         Write-PSFMessage -Level Host -Message "Starting to process rules for work item types."
         $sourceWitList | ForEach-Object {
@@ -365,7 +374,7 @@ function Invoke-ADOProjectMigration {
                 }
             }
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate layouts.." -Font "Standard" 
         ## Process Layouts
         Write-PSFMessage -Level Host -Message "Starting to process layouts for work item types."
         $sourceWitList | ForEach-Object {
@@ -470,7 +479,7 @@ function Invoke-ADOProjectMigration {
                 }
             }
         }
-
+        Convert-FSCPSTextToAscii -Text "Migrate project.." -Font "Standard" 
         ### PROCESSING PROJECT
 
 

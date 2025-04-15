@@ -20,7 +20,7 @@
         
     .EXAMPLE
         # Example: Retrieve and process work items from a source project
-        
+
         Get-ADOSourceWorkItemsList -SourceOrganization "source-org" -SourceProjectName "source-project" -SourceToken "source-token"
         
     .NOTES
@@ -42,7 +42,7 @@ function Get-ADOSourceWorkItemsList {
         [string]$SourceToken,
 
         [Parameter(Mandatory = $false)]
-        [string]$ApiVersion = "7.1"
+        [string]$ApiVersion = $Script:ADOApiVersion
     )
 
     begin {
