@@ -99,7 +99,7 @@ function Invoke-ADOWorkItemsProcessing {
                 }
                 @{
                     op    = "add"
-                    path  = "/fields/Custom.RelatedWorkitemId"
+                    path  = "/fields/Custom.SourceWorkitemId"
                     value = "$($SourceWorkItem."System.ID")"
                 }
                 @{

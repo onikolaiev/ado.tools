@@ -160,12 +160,12 @@ function Invoke-ADOProjectMigration {
                 Write-PSFMessage -Level Host -Message "Custom field '$($witField.name)' already exists in target organization. Skipping."
             }
         }
-        ### Creating RelatedWorkitemId field for the target organization
-        $relatedWorkitemIdFieldName = "RelatedWorkitemId"
-        $relatedWorkitemIdReferenceName = "Custom.$relatedWorkitemIdFieldName"
+        ### Creating SourceWorkitemId field for the target organization
+        $sourceWorkitemIdFieldName = "SourceWorkitemId"
+        $sourceWorkitemIdReferenceName = "Custom.$sourceWorkitemIdFieldName"
         $body = @{
-            name = $relatedWorkitemIdFieldName
-            referenceName = "$relatedWorkitemIdReferenceName"
+            name = $sourceWorkitemIdFieldName
+            referenceName = "$sourceWorkitemIdReferenceName"
             description = ""
             type = "string"
             usage = "workItem"
@@ -336,7 +336,8 @@ function Invoke-ADOProjectMigration {
                 if ($sourceState.hidden) { 
                         try {
                             Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
-                            $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true"
+                            $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true" -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+
                         }
                         catch {
                             Write-PSFMessage -Level Warning -Message "Failed to hide state '$($sourceState.name)' in target process. The state is already hidden"    
