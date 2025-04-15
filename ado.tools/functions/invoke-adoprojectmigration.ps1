@@ -86,22 +86,22 @@ function Invoke-ADOProjectMigration {
 
         ## GETTING THE SOURCE PROJECT INFORMATION
         Write-PSFMessage -Level Host -Message "Fetching source project '$sourceProjectName' from organization '$sourceOrganization'."
-        $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
+        $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
         if (-not $sourceProjecttmp) {
             Write-PSFMessage -Level Error -Message "Source project '$sourceProjectName' not found in organization '$sourceOrganization'. Exiting."
             return
         }
         Write-PSFMessage -Level Host -Message "Source project '$sourceProjectName' found. Fetching detailed information."
-        $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities
+        $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
         $sourceProjectVersionControl = $sourceProject.capabilities.versioncontrol
-        $sourceProjectProcess = Get-ADOProcess -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessTypeId "$($sourceProject.capabilities.processTemplate.templateTypeId)"
-        $sourceProjectProcessParentProcess = Get-ADOProcess -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessTypeId "$($sourceProjectProcess.parentProcessTypeId)"
+        $sourceProjectProcess = Get-ADOProcess -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessTypeId "$($sourceProject.capabilities.processTemplate.templateTypeId)"
+        $sourceProjectProcessParentProcess = Get-ADOProcess -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessTypeId "$($sourceProjectProcess.parentProcessTypeId)"
 
         Write-PSFMessage -Level Host -Message "Source project process: '$($sourceProjectProcess.name)' (ID: $($sourceProjectProcess.typeId))."
 
         ### PROCESSING PROCESS
         Write-PSFMessage -Level Host -Message "Checking if target process '$($sourceProjectProcess.name)' exists in target organization '$targetOrganization'."
-        $targetProjectProcess = (Get-ADOProcessList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion).Where({$_.name -eq $sourceProjectProcess.name})
+        $targetProjectProcess = (Get-ADOProcessList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion).Where({$_.name -eq $sourceProjectProcess.name})
 
         ## Check if the target process already exists. If not, create it.
         if (-not $targetProjectProcess) {
@@ -115,18 +115,18 @@ function Invoke-ADOProjectMigration {
             }
             $body = $body | ConvertTo-Json -Depth 10    
             Write-PSFMessage -Level Verbose -Message "Adding process '$($sourceProjectProcess.name)' to target organization '$($targetOrganization)' with the following details: $($body)"
-            $targetProjectProcess = Add-ADOProcess -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body
+            $targetProjectProcess = Add-ADOProcess -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
         } else {
             Write-PSFMessage -Level Host -Message "Target process '$($sourceProjectProcess.name)' already exists in target organization '$targetOrganization'."
         }
 
         ## PROCESSING WIT FIELDS
         Write-PSFMessage -Level Host -Message "Fetching custom work item fields from source organization '$sourceOrganization'."
-        $sourceWitFields = (Get-ADOWitFieldList -Organization $sourceOrganization -Token $sourceOrganizationtoken -Expand "extensionFields").Where({$_.referenceName.startswith("Custom.")})
+        $sourceWitFields = (Get-ADOWitFieldList -Organization $sourceOrganization -Token $sourceOrganizationtoken -Expand "extensionFields" -ApiVersion $ApiVersion ).Where({$_.referenceName.startswith("Custom.")})
         Write-PSFMessage -Level Host -Message "Found $($sourceWitFields.Count) custom fields in source organization."
 
         Write-PSFMessage -Level Host -Message "Fetching custom work item fields from target organization '$targetOrganization'."
-        $targetWitFields = (Get-ADOWitFieldList -Organization $targetOrganization -Token $targetOrganizationtoken -Expand "extensionFields").Where({$_.referenceName.startswith("Custom.")})
+        $targetWitFields = (Get-ADOWitFieldList -Organization $targetOrganization -Token $targetOrganizationtoken -Expand "extensionFields" -ApiVersion $ApiVersion).Where({$_.referenceName.startswith("Custom.")})
         Write-PSFMessage -Level Host -Message "Found $($targetWitFields.Count) custom fields in target organization."
 
         $sourceWitFields | ForEach-Object {
@@ -135,7 +135,7 @@ function Invoke-ADOProjectMigration {
             
             if (-not $targetWitField) {
                 Write-PSFMessage -Level Host -Message "Custom field '$($witField.name)' does not exist in target organization. Adding it."
-                $sourceWitField = Get-ADOWitField -Organization $sourceOrganization -Token $sourceOrganizationtoken -FieldNameOrRefName "$($witField.referenceName)" 
+                $sourceWitField = Get-ADOWitField -Organization $sourceOrganization -Token $sourceOrganizationtoken -FieldNameOrRefName "$($witField.referenceName)" -ApiVersion $ApiVersion
                 $body = @{
                     name = $sourceWitField.name
                     referenceName = $sourceWitField.referenceName
@@ -154,7 +154,7 @@ function Invoke-ADOProjectMigration {
 
                 $body = $body | ConvertTo-Json -Depth 10
                 Write-PSFMessage -Level Verbose -Message "Adding custom field '$($sourceWitField.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                $targetWitField = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body
+                $targetWitField = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
             } else {
                 Write-PSFMessage -Level Host -Message "Custom field '$($witField.name)' already exists in target organization. Skipping."
             }
@@ -176,15 +176,15 @@ function Invoke-ADOProjectMigration {
         
         $body = $body | ConvertTo-Json -Depth 10
         
-        Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body
+        Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
         
         ## PROCESSING WORK ITEM TYPES
         Write-PSFMessage -Level Host -Message "Fetching custom work item types from source process '$($sourceProjectProcess.name)'."
-        $sourceWitList = (Get-ADOWorkItemTypeList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
+        $sourceWitList = (Get-ADOWorkItemTypeList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
         Write-PSFMessage -Level Host -Message "Found $($sourceWitList.Count) custom work item types in source process."
 
         Write-PSFMessage -Level Host -Message "Fetching custom work item types from target process '$($targetProjectProcess.name)'."
-        $targetWitList = (Get-ADOWorkItemTypeList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
+        $targetWitList = (Get-ADOWorkItemTypeList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
         Write-PSFMessage -Level Host -Message "Found $($targetWitList.Count) custom work item types in target process."
 
         $sourceWitList | ForEach-Object {
@@ -193,7 +193,7 @@ function Invoke-ADOProjectMigration {
             
             if (-not $targetWit) {
                 Write-PSFMessage -Level Host -Message "Work item type '$($wit.name)' does not exist in target process. Adding it."
-                $sourceWit = Get-ADOWorkItemType -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)"
+                $sourceWit = Get-ADOWorkItemType -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)"
                 $body = @{
                     name = $sourceWit.name
                     description = $sourceWit.description
@@ -209,7 +209,7 @@ function Invoke-ADOProjectMigration {
                 Write-PSFMessage -Level Host -Message "Work item type '$($wit.name)' already exists in target process. Skipping."
             }
         }
-        $targetWitList = (Get-ADOWorkItemTypeList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
+        $targetWitList = (Get-ADOWorkItemTypeList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand layout).Where({$_.customization -eq 'inherited'})
 
         ## Process Fields
         Write-PSFMessage -Level Host -Message "Starting to process custom fields for work item types."
@@ -217,15 +217,15 @@ function Invoke-ADOProjectMigration {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing fields for work item type '$($wit.name)'."
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})
-            $customFields = (Get-ADOWorkItemTypeFieldList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName $wit.referenceName).Where({$_.customization -ne "system"})
+            $customFields = (Get-ADOWorkItemTypeFieldList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName $wit.referenceName).Where({$_.customization -ne "system"})
             $customFields | ForEach-Object {
                 $field = $_
                 Write-PSFMessage -Level Host -Message "Checking field '$($field.name)' in target process."
-                $targetField = (Get-ADOWorkItemTypeFieldList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName $targetWit.referenceName).Where({$_.name -eq $field.name})
+                $targetField = (Get-ADOWorkItemTypeFieldList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName $targetWit.referenceName).Where({$_.name -eq $field.name})
                 
                 if (-not $targetField) {
                     Write-PSFMessage -Level Host -Message "Field '$($field.name)' does not exist in target process. Adding it."
-                    $sourceField = Get-ADOWorkItemTypeField -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -FieldRefName "$($field.referenceName)" -Expand all
+                    $sourceField = Get-ADOWorkItemTypeField -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -FieldRefName "$($field.referenceName)" -Expand all
                     $body = @{
                         allowGroups = $sourceField.allowGroups
                         allowedValues = $sourceField.allowedValues
@@ -237,7 +237,7 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Verbose -Message "Adding field '$($sourceField.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetField = Add-ADOWorkItemTypeField -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName $targetWit.referenceName -Body $body
+                    $targetField = Add-ADOWorkItemTypeField -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName $targetWit.referenceName -Body $body
                 } else {
                     Write-PSFMessage -Level Host -Message "Field '$($field.name)' already exists in target process. Skipping."
                 }
@@ -250,8 +250,8 @@ function Invoke-ADOProjectMigration {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing behaviors for work item type '$($wit.name)'."
             #$targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
-            $sourceBehaviors = (Get-ADOProcessBehaviorList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand "fields")
-            $targetBehaviors = (Get-ADOProcessBehaviorList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand "fields")
+            $sourceBehaviors = (Get-ADOProcessBehaviorList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -Expand "fields")
+            $targetBehaviors = (Get-ADOProcessBehaviorList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -Expand "fields")
             $sourceBehaviors | ForEach-Object {
                 $behavior = $_
                 Write-PSFMessage -Level Host -Message "Checking behavior '$($behavior.name)' in target process."
@@ -259,7 +259,7 @@ function Invoke-ADOProjectMigration {
                 
                 if (-not $targetBehavior) {
                     Write-PSFMessage -Level Verbose -Message "Behavior '$($behavior.name)' does not exist in target process. Adding it."
-                    $sourceBehavior = Get-ADOProcessBehavior -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -BehaviorRefName "$($behavior.referenceName)"  -Expand "fields"
+                    $sourceBehavior = Get-ADOProcessBehavior -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -BehaviorRefName "$($behavior.referenceName)"  -Expand "fields"
                     $body = @{
                         color = $sourceBehavior.color
                         inherits = $sourceBehavior.inherits
@@ -268,7 +268,7 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Host -Message "Adding behavior '$($sourceBehavior.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetBehavior = Add-ADOProcessBehavior -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -Body $body
+                    $targetBehavior = Add-ADOProcessBehavior -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -Body $body
                 } else {
                     Write-PSFMessage -Level Host -Message "Behavior '$($behavior.name)' already exists in target process. Skipping."
                 }
@@ -277,8 +277,8 @@ function Invoke-ADOProjectMigration {
 
         ## Process Picklists
         Write-PSFMessage -Level Host -Message "Starting to process picklists."
-        $sourcePicklists = (Get-ADOPickListList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion)
-        $targetPicklists = (Get-ADOPickListList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion)
+        $sourcePicklists = (Get-ADOPickListList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion)
+        $targetPicklists = (Get-ADOPickListList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion)
         $sourcePicklists | ForEach-Object {
             $picklist = $_
             Write-PSFMessage -Level Host -Message "Checking picklist '$($picklist.name)' in target process."
@@ -286,7 +286,7 @@ function Invoke-ADOProjectMigration {
             
             if (-not $targetPicklist) {
                 Write-PSFMessage -Level Verbose -Message "Picklist '$($picklist.name)' does not exist in target process. Adding it."
-                $sourcePicklist = Get-ADOPickList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ListId "$($picklist.id)"
+                $sourcePicklist = Get-ADOPickList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ListId "$($picklist.id)"
                 $body = @{
                     name = $sourcePicklist.name
                     type = $sourcePicklist.type
@@ -295,7 +295,7 @@ function Invoke-ADOProjectMigration {
                 }
                 $body = $body | ConvertTo-Json -Depth 10
                 Write-PSFMessage -Level Host -Message "Adding picklist '$($sourcePicklist.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                $targetPicklist = Add-ADOPickList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -Body $body
+                $targetPicklist = Add-ADOPickList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -Body $body
             } else {
                 Write-PSFMessage -Level Host -Message "Picklist '$($picklist.name)' already exists in target process. Skipping."
             }
@@ -307,13 +307,13 @@ function Invoke-ADOProjectMigration {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing states for work item type '$($wit.name)'."
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
-            $sourceStates = (Get-ADOWorkItemTypeStateList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")
-            $targetStates = (Get-ADOWorkItemTypeStateList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
+            $sourceStates = (Get-ADOWorkItemTypeStateList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")
+            $targetStates = (Get-ADOWorkItemTypeStateList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
             $sourceStates | ForEach-Object {
                 $state = $_
                 Write-PSFMessage -Level Host -Message "Checking state '$($state.name)' in target process."
                 $targetState = $targetStates.Where({$_.name -eq $state.name})
-                $sourceState = Get-ADOWorkItemTypeState -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -StateId "$($state.id)"
+                $sourceState = Get-ADOWorkItemTypeState -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -StateId "$($state.id)"
                     
                 if (-not $targetState) {
                     Write-PSFMessage -Level Host -Message "State '$($state.name)' does not exist in target process. Adding it."
@@ -325,14 +325,14 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Verbose -Message "Adding state '$($sourceState.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetState = Add-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    $targetState = Add-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
                 } else {
                     Write-PSFMessage -Level Host -Message "State '$($state.name)' already exists in target process. Skipping."
                 }
 
                 if ($sourceState.hidden) { 
                     Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
-                    $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true"
+                    $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true"
                 }   
             }
         }
@@ -342,15 +342,15 @@ function Invoke-ADOProjectMigration {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing rules for work item type '$($wit.name)'."
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})    
-            $sourceRules = (Get-ADOWorkItemTypeRuleList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)").Where({$_.customizationType -ne 'system'})  
-            $targetRules = (Get-ADOWorkItemTypeRuleList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)").Where({$_.customizationType -ne 'system'}) 
+            $sourceRules = (Get-ADOWorkItemTypeRuleList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)").Where({$_.customizationType -ne 'system'})  
+            $targetRules = (Get-ADOWorkItemTypeRuleList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)").Where({$_.customizationType -ne 'system'}) 
             $sourceRules | ForEach-Object {
                 $rule = $_
                 Write-PSFMessage -Level Host -Message "Checking rule '$($rule.name)' in target process."
                 $targetRule = $targetRules.Where({$_.name -eq $rule.name})
                 if (-not $targetRule) {
                     Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' does not exist in target process. Adding it."
-                    $sourceRule = Get-ADOWorkItemTypeRule -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -RuleRefName "$($rule.referenceName)"
+                    $sourceRule = Get-ADOWorkItemTypeRule -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -RuleRefName "$($rule.referenceName)"
                     $body = @{
                         name = $sourceRule.name
                         conditions = $sourceRule.conditions
@@ -359,7 +359,7 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Host -Message "Adding rule '$($sourceRule.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetRule = Add-ADOWorkItemTypeRule -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    $targetRule = Add-ADOWorkItemTypeRule -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
                 } else {
                     Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' already exists in target process. Skipping."
                 }
@@ -372,8 +372,8 @@ function Invoke-ADOProjectMigration {
             $wit = $_
             Write-PSFMessage -Level Host -Message "Processing layouts for work item type '$($wit.name)'."
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})
-            $sourceLayout = (Get-ADOWorkItemTypeLayout -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")    
-            $targetLayout = (Get-ADOWorkItemTypeLayout -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
+            $sourceLayout = (Get-ADOWorkItemTypeLayout -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")    
+            $targetLayout = (Get-ADOWorkItemTypeLayout -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
             $sourceLayout.pages | Where-Object pageType -EQ "custom" | ForEach-Object {
                 $sourcePage = $_
                 Write-PSFMessage -Level Host -Message "Processing page '$($sourcePage.label)' for work item type '$($wit.name)'."
@@ -388,7 +388,7 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Verbose -Message "Adding page '$($sourcePage.label)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetPage = Add-ADOWorkItemTypePage -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    $targetPage = Add-ADOWorkItemTypePage -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
                 } else {
                     Write-PSFMessage -Level Host -Message "Page '$($sourcePage.label)' already exists in target process. Updating it."
                     $body = @{
@@ -399,7 +399,7 @@ function Invoke-ADOProjectMigration {
                     }
                     $body = $body | ConvertTo-Json -Depth 10
                     Write-PSFMessage -Level Verbose -Message "Updating page '$($sourcePage.label)' in target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $null = Update-ADOWorkItemTypePage -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    $null = Update-ADOWorkItemTypePage -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
                 }
 
                 # Process Sections
@@ -418,7 +418,7 @@ function Invoke-ADOProjectMigration {
                         }
                         $body = $body | ConvertTo-Json -Depth 10
                         Write-PSFMessage -Level Verbose -Message "Adding section '$(if($sourceSection.label){$sourceSection.label}else{$sourceSection.id})' to page '$($targetPage.label)' in target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                        $targetSection = Add-ADOWorkItemTypeSection -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -PageId "$($targetPage.id)" -Body $body
+                        $targetSection = Add-ADOWorkItemTypeSection -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -PageId "$($targetPage.id)" -Body $body
                     } else {
                         Write-PSFMessage -Level Host -Message "Section '$(if($sourceSection.label){$sourceSection.label}else{$sourceSection.id})' already exists in target process. Skipping."
                     }
@@ -438,7 +438,7 @@ function Invoke-ADOProjectMigration {
                             }
                             $body = $body | ConvertTo-Json -Depth 10
                             Write-PSFMessage -Level Verbose -Message "Adding group '$($sourceGroup.label)' to section '$($sourceSection.label)' on page '$($targetPage.label)' in target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                            $targetGroup = Add-ADOWorkItemTypeGroup -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -PageId "$($targetPage.id)" -SectionId "$($sourceSection.id)" -Body $body
+                            $targetGroup = Add-ADOWorkItemTypeGroup -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -PageId "$($targetPage.id)" -SectionId "$($sourceSection.id)" -Body $body
                         } else {
                             Write-PSFMessage -Level Host -Message "Group '$($sourceGroup.label)' already exists in target process. Skipping."
                         }
@@ -461,7 +461,7 @@ function Invoke-ADOProjectMigration {
                                 }
                                 $body = $body | ConvertTo-Json -Depth 10
                                 Write-PSFMessage -Level Verbose -Message "Adding control '$(if($sourceControl.label){$sourceControl.label}else{$sourceControl.id})' to group '$($sourceGroup.label)' in target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                                $targetControl = Add-ADOWorkItemTypeGroupControl -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -GroupId "$($targetGroup.id)" -Body $body
+                                $targetControl = Add-ADOWorkItemTypeGroupControl -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -GroupId "$($targetGroup.id)" -Body $body
                             } else {
                                 Write-PSFMessage -Level Host -Message "Control '$(if($sourceControl.label){$sourceControl.label}else{$sourceControl.id})' already exists in target process. Skipping."
                             }
@@ -475,7 +475,7 @@ function Invoke-ADOProjectMigration {
 
 
         Write-PSFMessage -Level Host -Message "Fetching source project '$($sourceProjecttmp.name)' from organization '$($sourceOrganization)'."
-        $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities
+        $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
 
         Write-PSFMessage -Level Host -Message "Checking if target project '$($sourceProjectName)' exists in organization '$($targetOrganization)'."
         $targetProject = (Get-ADOProjectList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
@@ -499,7 +499,7 @@ function Invoke-ADOProjectMigration {
             $body = $body | ConvertTo-Json -Depth 10
 
             Write-PSFMessage -Level Host -Message "Adding project '$($targetProjectName)' to target organization '$($targetOrganization)' with the following details: $($body)"
-            $targetProject = Add-ADOProject -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body
+            $targetProject = Add-ADOProject -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
 
             Write-PSFMessage -Level Host -Message "Project '$($targetProjectName)' successfully created in target organization '$($targetOrganization)'."
         } else {
@@ -521,7 +521,7 @@ function Invoke-ADOProjectMigration {
             $body = $body | ConvertTo-Json -Depth 10
 
             Write-PSFMessage -Level Host -Message "Updating project '$($targetProjectName)' in target organization '$($targetOrganization)' with the following details: $($body)"
-            $targetProject = Update-ADOProject -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ProjectId "$($targetProject.id)"
+            $targetProject = Update-ADOProject -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ProjectId "$($targetProject.id)" -ApiVersion $ApiVersion
 
             Write-PSFMessage -Level Host -Message "Project '$($targetProjectName)' successfully updated in target organization '$($targetOrganization)'."
         }
