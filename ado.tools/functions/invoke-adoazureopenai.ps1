@@ -36,7 +36,6 @@
         $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
         $openaiApiKey = "your-api-key"
         $codebasePath = "C:\Projects\MyCodebase"
-        $indexPath = "C:\Temp\codebase_index.json"
         $userQuery = "Analyze the code for bugs and improvements."
         $filenames = @("example1.al", "example2.al")
         
@@ -44,13 +43,12 @@
         Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
         -OpenAIApiKey $openaiApiKey `
         -CodebasePath $codebasePath `
-        -IndexPath $indexPath `
         -UserQuery $userQuery `
         -Filenames $filenames
         
     .NOTES
         This function uses PSFramework for logging and exception handling.
-
+        
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
 

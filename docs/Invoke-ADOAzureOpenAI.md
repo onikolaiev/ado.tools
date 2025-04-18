@@ -27,21 +27,19 @@ It generates a report based on the provided user query and context extracted fro
 ### EXAMPLE 1
 ```
 # Define the required parameters
-$openaiEndpoint = "https://onopenai.openai.azure.com/openai/deployments/o1/chat/completions?api-version=2024-12-01-preview"
+$openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
 $codebasePath = "C:\Projects\MyCodebase"
-$indexPath = "C:\Temp\codebase_index.json"
 $userQuery = "Analyze the code for bugs and improvements."
 $filenames = @("example1.al", "example2.al")
 ```
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint \`
-                    -OpenAIApiKey $openaiApiKey \`
-                    -CodebasePath $codebasePath \`
-                    -IndexPath $indexPath \`
-                    -UserQuery $userQuery \`
-                    -Filenames $filenames
+-OpenAIApiKey $openaiApiKey \`
+-CodebasePath $codebasePath \`
+-UserQuery $userQuery \`
+-Filenames $filenames
 
 ## PARAMETERS
 
