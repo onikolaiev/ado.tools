@@ -89,17 +89,15 @@ The `Invoke-ADOAzureOpenAI` function integrates with Azure OpenAI to analyze and
 $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
 $codebasePath = "C:\Projects\MyCodebase"
-$indexPath = "C:\Temp\codebase_index.json"
 $userQuery = "Analyze the code for bugs and improvements."
-$filenames = @("example1.al", "example2.al")
+$filesToAnalize = @("example1.al", "example2.al")
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
                       -OpenAIApiKey $openaiApiKey `
                       -CodebasePath $codebasePath `
-                      -IndexPath $indexPath `
                       -UserQuery $userQuery `
-                      -Filenames $filenames
+                      -Filenames $filesToAnalize
 ```
 # **Invoke-ADOProjectMigration**
 
