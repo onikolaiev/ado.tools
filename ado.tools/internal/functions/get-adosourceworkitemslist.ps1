@@ -1,34 +1,35 @@
+
 <#
-.SYNOPSIS
-Retrieves and processes work items from a source Azure DevOps project.
-
-.DESCRIPTION
-This function retrieves work items from a source Azure DevOps project using a WIQL query, splits them into batches of 200, and processes them to extract detailed information.
-
-.PARAMETER SourceOrganization
-The name of the source Azure DevOps organization.
-
-.PARAMETER SourceProjectName
-The name of the source Azure DevOps project.
-
-.PARAMETER SourceToken
-The personal access token (PAT) for the source Azure DevOps organization.
-
-.PARAMETER Fields
-(Optional) The fields to retrieve for each work item. Default is a set of common fields including ID, Title, Description, WorkItemType, State, and Parent.
-
-.PARAMETER ApiVersion
-(Optional) The API version to use. Default is `7.1`.
-
-.EXAMPLE
-# Example: Retrieve and process work items from a source project
-
-Get-ADOSourceWorkItemsList -SourceOrganization "source-org" -SourceProjectName "source-project" -SourceToken "source-token"
-
-.NOTES
-This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
-
-Author: Oleksandr Nikolaiev (@onikolaiev)
+    .SYNOPSIS
+        Retrieves and processes work items from a source Azure DevOps project.
+        
+    .DESCRIPTION
+        This function retrieves work items from a source Azure DevOps project using a WIQL query, splits them into batches of 200, and processes them to extract detailed information.
+        
+    .PARAMETER SourceOrganization
+        The name of the source Azure DevOps organization.
+        
+    .PARAMETER SourceProjectName
+        The name of the source Azure DevOps project.
+        
+    .PARAMETER SourceToken
+        The personal access token (PAT) for the source Azure DevOps organization.
+        
+    .PARAMETER Fields
+        (Optional) The fields to retrieve for each work item. Default is a set of common fields including ID, Title, Description, WorkItemType, State, and Parent.
+        
+    .PARAMETER ApiVersion
+        (Optional) The API version to use. Default is `7.1`.
+        
+    .EXAMPLE
+        # Example: Retrieve and process work items from a source project
+        
+        Get-ADOSourceWorkItemsList -SourceOrganization "source-org" -SourceProjectName "source-project" -SourceToken "source-token"
+        
+    .NOTES
+        This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
+        
+        Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
 
 function Get-ADOSourceWorkItemsList {
@@ -90,6 +91,9 @@ function Get-ADOSourceWorkItemsList {
             $wiResult = @()
             # Process each batch
             foreach ($witBatch in $witListBatches) {
+                if($witBatch.Count -eq 0) {
+                    continue
+                }
                 Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
                 $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
             }

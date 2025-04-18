@@ -27,7 +27,7 @@
         
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use. Default is "7.1".
-
+        
     .EXAMPLE
         $sourceOrg = "sourceOrg"
         $targetOrg = "targetOrg"
@@ -35,14 +35,14 @@
         $targetProjectName = "targetProject"
         $sourceOrgToken = "sourceOrgToken"
         $targetOrgToken = "targetOrgToken"
-
+        
         Invoke-ADOProjectMigration -SourceOrganization $sourceOrg `
-                                   -TargetOrganization $targetOrg `
-                                   -SourceProjectName $sourceProjectName `
-                                   -TargetProjectName $targetProjectName `
-                                   -SourceOrganizationToken $sourceOrgToken `
-                                   -TargetOrganizationToken $targetOrgToken
-                                 
+        -TargetOrganization $targetOrg `
+        -SourceProjectName $sourceProjectName `
+        -TargetProjectName $targetProjectName `
+        -SourceOrganizationToken $sourceOrgToken `
+        -TargetOrganizationToken $targetOrgToken
+        
         This example migrates the project "sourceProject" from the organization "sourceOrg" to the organization "targetOrg".
         
     .NOTES
@@ -177,7 +177,7 @@ function Invoke-ADOProjectMigration {
         
         $body = $body | ConvertTo-Json -Depth 10
         
-        $null = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion
+        $null = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
 
         Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard" 
         ## PROCESSING WORK ITEM TYPES
@@ -537,7 +537,7 @@ function Invoke-ADOProjectMigration {
         }
 
         #PROCESSING WORK ITEM
-        $sourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken)
+        $sourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken -ApiVersion $ApiVersion)
         $targetWorkItemList = @{}
      
         $sourceWorkItemsList |  ForEach-Object {
