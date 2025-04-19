@@ -62,19 +62,13 @@ The `Invoke-ADOAzureOpenAI` function integrates with Azure OpenAI to analyze and
 - **Type**: `string`
 - **Mandatory**: Yes
 
-### `-IndexPath`
-- **Description**: The path where the indexed codebase will be stored as a JSON file.
-- **Type**: `string`
-- **Mandatory**: No
-- **Default**: `c:\temp\codebase_index.json`
-
-### `-UserQuery`
-- **Description**: The query or instructions for Azure OpenAI to perform the code review.
+### `-Prompt`
+- **Description**: The prompt that will be send to the LLM within the codebase.    
 - **Type**: `string`
 - **Mandatory**: Yes
 
-### `-Filenames`
-- **Description**: A list of specific filenames to filter the search results.
+### `-Files`
+- **Description**: A list of specific files from the codebase that should be analize.
 - **Type**: `array`
 - **Mandatory**: Yes
 
@@ -89,15 +83,15 @@ The `Invoke-ADOAzureOpenAI` function integrates with Azure OpenAI to analyze and
 $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
 $codebasePath = "C:\Projects\MyCodebase"
-$userQuery = "Analyze the code for bugs and improvements."
+$prompt = "Analyze the code for bugs and improvements."
 $filesToAnalize = @("example1.al", "example2.al")
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
                       -OpenAIApiKey $openaiApiKey `
                       -CodebasePath $codebasePath `
-                      -UserQuery $userQuery `
-                      -Filenames $filesToAnalize
+                      -Prompt $prompt `
+                      -Files $filesToAnalize
 ```
 # **Invoke-ADOProjectMigration**
 

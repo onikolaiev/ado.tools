@@ -14,8 +14,8 @@ Performs a code review of a Microsoft Dynamics 365 Business Central AL codebase 
 
 ```
 Invoke-ADOAzureOpenAI [-OpenAIEndpoint] <String> [-OpenAIApiKey] <String> [-CodebasePath] <String>
- [[-IndexPath] <String>] [[-UserQuery] <String>] [-Filenames] <Array> [[-ExcludedFolders] <Array>]
- [[-FileExtensions] <Array>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [[-Prompt] <String>] [-Files] <Array> [[-ExcludedFolders] <Array>] [[-FileExtensions] <Array>]
+ [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -30,7 +30,7 @@ It generates a report based on the provided user query and context extracted fro
 $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
 $codebasePath = "C:\Projects\MyCodebase"
-$userQuery = "Analyze the code for bugs and improvements."
+$prompt = "Analyze the code for bugs and improvements."
 $filenames = @("example1.al", "example2.al")
 ```
 
@@ -38,8 +38,8 @@ $filenames = @("example1.al", "example2.al")
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint \`
 -OpenAIApiKey $openaiApiKey \`
 -CodebasePath $codebasePath \`
--UserQuery $userQuery \`
--Filenames $filenames
+-Prompt $prompt \`
+-Files $filenames
 
 ## PARAMETERS
 
@@ -88,46 +88,32 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -IndexPath
-The path where the indexed codebase will be stored as a JSON file.
+### -Prompt
+The  prompt to be sent to Azure OpenAI for code review.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases:
+Aliases: UserQuery
 
 Required: False
 Position: 4
-Default value: C:\temp\codebase_index.json
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -UserQuery
-The query or instructions for Azure OpenAI to perform the code review.
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 5
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Filenames
-(Optional) A list of specific filenames to filter the search results.
+### -Files
+(Optional) A list of specific file to search for in the codebase.
+Provide a paths to the files.
 
 ```yaml
 Type: Array
 Parameter Sets: (All)
-Aliases:
+Aliases: Filenames
 
 Required: True
-Position: 6
+Position: 5
 Default value: @()
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -142,7 +128,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 7
+Position: 6
 Default value: @(".git", "node_modules", ".vscode")
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -157,7 +143,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 8
+Position: 7
 Default value: @(".al", ".json", ".xml", ".txt")
 Accept pipeline input: False
 Accept wildcard characters: False

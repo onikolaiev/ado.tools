@@ -16,14 +16,11 @@
     .PARAMETER CodebasePath
         The path to the codebase to be indexed and reviewed.
         
-    .PARAMETER IndexPath
-        The path where the indexed codebase will be stored as a JSON file.
+    .PARAMETER Prompt
+        The  prompt to be sent to Azure OpenAI for code review.
         
-    .PARAMETER UserQuery
-        The query or instructions for Azure OpenAI to perform the code review.
-        
-    .PARAMETER Filenames
-        (Optional) A list of specific filenames to filter the search results.
+    .PARAMETER Files
+        (Optional) A list of specific file to search for in the codebase. Provide a paths to the files.
         
     .PARAMETER ExcludedFolders
         (Optional) A list of folder names to exclude from indexing.
@@ -36,15 +33,15 @@
         $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
         $openaiApiKey = "your-api-key"
         $codebasePath = "C:\Projects\MyCodebase"
-        $userQuery = "Analyze the code for bugs and improvements."
+        $prompt = "Analyze the code for bugs and improvements."
         $filenames = @("example1.al", "example2.al")
         
         # Call the function
         Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
         -OpenAIApiKey $openaiApiKey `
         -CodebasePath $codebasePath `
-        -UserQuery $userQuery `
-        -Filenames $filenames
+        -Prompt $prompt `
+        -Files $filenames
         
     .NOTES
         This function uses PSFramework for logging and exception handling.
@@ -60,89 +57,107 @@ function Invoke-ADOAzureOpenAI {
         [string]$OpenAIApiKey,
         [Parameter(Mandatory = $true)]
         [string]$CodebasePath,
-        [string]$IndexPath = "c:\temp\codebase_index.json",
-        [string]$UserQuery,
-
+        [Alias("UserQuery")]
+        [string]$Prompt,
         [Parameter(Mandatory = $true)]
-        [array]$Filenames = @(),
-
+        [Alias("Filenames")]
+        [array]$Files = @(),
         [array]$ExcludedFolders = @(".git", "node_modules", ".vscode"),
         [array]$FileExtensions = @(".al", ".json", ".xml", ".txt")
     )
+    begin{
 
-    try {
-        # Step 1: Index the codebase
-        Write-PSFMessage -Level Host -Message "Indexing the codebase at path: $CodebasePath"
-        $index = @()
+        $IndexPath = "c:\temp\codebase_index.json"
+        $ErrorActionPreference = "Stop"
 
-        If(-not (Test-Path $IndexPath)) {
-            $null = New-Item -Path $IndexPath -ItemType File -Force
-        }
+        # Validate parameters
+        if (-not (Test-Path $CodebasePath)) {
+            throw "The specified codebase path does not exist: $CodebasePath"
+        }        
+        Invoke-TimeSignal -Start
+    }
+    process{
+        if (Test-PSFFunctionInterrupt) { return }
 
-        Get-ChildItem -Path $CodebasePath -Recurse -File | Where-Object {
-            ($FileExtensions -contains $_.Extension) -and
-            ($ExcludedFolders -notcontains $_.DirectoryName.Split('\')[-1])
-        } | ForEach-Object {
-            $filePath = $_.FullName
-            $content = Get-Content -Path $filePath -Raw
-            $index += @{
-                FilePath = "$filePath"
-                Content = $content
+        try {
+            # Step 1: Index the codebase
+            Write-PSFMessage -Level Host -Message "Indexing the codebase at path: $CodebasePath"
+            $index = @()
+    
+            If(-not (Test-Path $IndexPath)) {
+                $null = New-Item -Path $IndexPath -ItemType File -Force
             }
-        }
-
-        $index | ConvertTo-Json -Depth 10 | Set-Content -Path $IndexPath
-        Write-PSFMessage -Level Host -Message "Indexing completed. Output saved to: $IndexPath"
-
-        # Step 2: Search the codebase
-        Write-PSFMessage -Level Host -Message "Searching the codebase for relevant files."
-        $index = Get-Content -Path $IndexPath | ConvertFrom-Json
-        $context = @()
-
-        foreach ($file in $index) {
-            if ($file.Content -match [regex]::Escape("")) {
-                $context += @{
-                    FilePath = $file.FilePath
-                    Snippet = $file.Content -replace "(?s).{0,50}" + [regex]::Escape("") + ".{0,50}", "...$&..."
+    
+            Get-ChildItem -Path $CodebasePath -Recurse -File | Where-Object {
+                ($FileExtensions -contains $_.Extension) -and
+                ($ExcludedFolders -notcontains $_.DirectoryName.Split('\')[-1])
+            } | ForEach-Object {
+                $filePath = $_.FullName
+                $content = Get-Content -Path $filePath -Raw
+                $index += @{
+                    FilePath = "$filePath"
+                    Content = $content
                 }
             }
+    
+            $index | ConvertTo-Json -Depth 10 | Set-Content -Path $IndexPath
+            Write-PSFMessage -Level Host -Message "Indexing completed. Output saved to: $IndexPath"
+    
+            # Step 2: Search the codebase
+            Write-PSFMessage -Level Host -Message "Searching the codebase for relevant files."
+            $index = Get-Content -Path $IndexPath | ConvertFrom-Json
+            $context = @()
+    
+            foreach ($file in $index) {
+                if ($file.Content -match [regex]::Escape("")) {
+                    $context += @{
+                        FilePath = $file.FilePath
+                        Snippet = $file.Content -replace "(?s).{0,50}" + [regex]::Escape("") + ".{0,50}", "...$&..."
+                    }
+                }
+            }
+    
+            Write-PSFMessage -Level Host -Message "Filtering results based on provided filenames."
+            $context = $context | Where-Object {
+                $filePath = $_.FilePath
+                $Files | ForEach-Object { $filePath -like "*$_" } | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
+            }
+    
+            Write-PSFMessage -Level Host -Message "Search completed. Found $($context.Count) matching files."
+    
+            # Step 3: Query Azure OpenAI
+            Write-PSFMessage -Level Host -Message "Sending request to Azure OpenAI for code review."
+            $fullPrompt = "You are an assistant that helps with code suggestions. Here is the context:\n"
+            foreach ($snippet in $context) {
+                $fullPrompt += "File: $($snippet.FilePath)\nCode:\n$($snippet.Snippet)\n\n"
+            }
+            $fullPrompt += "User Prompt: $Prompt"
+    
+            $body = @{
+                messages = @(
+                    @{ role = "system"; content = "You are a helpful assistant for code suggestions." },
+                    @{ role = "user"; content = $fullPrompt }
+                )
+            } | ConvertTo-Json -Depth 10
+    
+            $headers = @{
+                "Content-Type" = "application/json"
+                "api-key" = $OpenAIApiKey
+            }
+    
+            $response = Invoke-RestMethod -Uri $OpenAIEndpoint -Method Post -Headers $headers -Body $body
+            Write-PSFMessage -Level Host -Message "Azure OpenAI response received."
+    
+            # Output the response
+            return $response.choices[0].message.content
+        } catch {
+            Write-PSFMessage -Level Error -Message "An error occurred: $($_.Exception.Message)"
+            throw
         }
-
-        Write-PSFMessage -Level Host -Message "Filtering results based on provided filenames."
-        $context = $context | Where-Object {
-            $filePath = $_.FilePath
-            $Filenames | ForEach-Object { $filePath -like "*$_" } | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
-        }
-
-        Write-PSFMessage -Level Host -Message "Search completed. Found $($context.Count) matching files."
-
-        # Step 3: Query Azure OpenAI
-        Write-PSFMessage -Level Host -Message "Sending request to Azure OpenAI for code review."
-        $fullPrompt = "You are an assistant that helps with code suggestions. Here is the context:\n"
-        foreach ($snippet in $context) {
-            $fullPrompt += "File: $($snippet.FilePath)\nCode:\n$($snippet.Snippet)\n\n"
-        }
-        $fullPrompt += "User Query: $UserQuery"
-
-        $body = @{
-            messages = @(
-                @{ role = "system"; content = "You are a helpful assistant for code suggestions." },
-                @{ role = "user"; content = $fullPrompt }
-            )
-        } | ConvertTo-Json -Depth 10
-
-        $headers = @{
-            "Content-Type" = "application/json"
-            "api-key" = $OpenAIApiKey
-        }
-
-        $response = Invoke-RestMethod -Uri $OpenAIEndpoint -Method Post -Headers $headers -Body $body
-        Write-PSFMessage -Level Host -Message "Azure OpenAI response received."
-
-        # Output the response
-        return $response.choices[0].message.content
-    } catch {
-        Write-PSFMessage -Level Error -Message "An error occurred: $($_.Exception.Message)"
-        throw
+    }
+    end{
+        # Log the end of the operation
+        Write-PSFMessage -Level Host -Message "Request completed."
+        Invoke-TimeSignal -End
     }
 }

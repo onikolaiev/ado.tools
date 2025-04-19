@@ -77,6 +77,7 @@ function Invoke-ADOProjectMigration {
     )
     begin{
         Invoke-TimeSignal -Start
+        $ErrorActionPreference = "Stop"
     }
     process{
         if (Test-PSFFunctionInterrupt) { return }
