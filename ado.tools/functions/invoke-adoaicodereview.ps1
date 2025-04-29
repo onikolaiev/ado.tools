@@ -38,10 +38,10 @@
         
         # Call the function
         Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
-                -OpenAIApiKey $openaiApiKey `
-                -CodebasePath $codebasePath `
-                -Prompt $prompt `
-                -Files $filenames
+            -OpenAIApiKey $openaiApiKey `
+            -CodebasePath $codebasePath `
+            -Prompt $prompt `
+            -Files $filenames
         
     .NOTES
         This function uses PSFramework for logging and exception handling.
