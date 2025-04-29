@@ -13,35 +13,91 @@
     .PARAMETER OpenAIApiKey
         The API key for authenticating with Azure OpenAI.
         
-    .PARAMETER CodebasePath
-        The path to the codebase to be indexed and reviewed.
-        
-    .PARAMETER Prompt
-        The  prompt to be sent to Azure OpenAI for code review.
-        
-    .PARAMETER Files
-        (Optional) A list of specific file to search for in the codebase. Provide a paths to the files.
-        
-    .PARAMETER ExcludedFolders
-        (Optional) A list of folder names to exclude from indexing.
-        
-    .PARAMETER FileExtensions
-        (Optional) A list of file extensions to include in the indexing process.
+    .PARAMETER Messages
+        The messages to be sent to Azure OpenAI.
         
     .EXAMPLE
         # Define the required parameters
         $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
         $openaiApiKey = "your-api-key"
-        $codebasePath = "C:\Projects\MyCodebase"
-        $prompt = "Analyze the code for bugs and improvements."
-        $filenames = @("example1.al", "example2.al")
+        $prompt = "Who are you?"
+        $messages = @(
+        @{ role = "system"; content = "You are a helpful assistant." },
+        @{ role = "user"; content = $prompt }
+        )
+        
         
         # Call the function
         Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
-        -OpenAIApiKey $openaiApiKey `
-        -CodebasePath $codebasePath `
-        -Prompt $prompt `
-        -Files $filenames
+                -OpenAIApiKey $openaiApiKey `
+                -CodebasePath $codebasePath `
+                -Messages $messages
+        
+    .OUTPUTS
+        Returns a hashtable containing the response from Azure OpenAI.
+        The hashtable includes the following keys:
+                - id
+                - object
+                - created
+                - model
+                - usage
+                - choices
+        
+        #Example response
+        @"
+        {
+        "model": "o1-2024-12-17",
+        "created": 1745923901,
+        "object": "chat.completion",
+        "id": "chatcmpl-BRcqr2gTdJH2EeL63R3jEM5ZVOpUD",
+        "choices": [
+        {
+        "content_filter_results": {
+        "hate": {
+        "filtered": false,
+        "severity": "safe"
+        },
+        "self_harm": {
+        "filtered": false,
+        "severity": "safe"
+        },
+        "sexual": {
+        "filtered": false,
+        "severity": "safe"
+        },
+        "violence": {
+        "filtered": false,
+        "severity": "safe"
+        }
+        },
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+        "content": "I’m ChatGPT, a large language model trained by OpenAI. I’m here to help you with your questions, provide information, and engage in conversation. How can I assist you today?",
+        "refusal": null,
+        "role": "assistant"
+        }
+        }
+        ],
+        "usage": {
+        "completion_tokens": 178,
+        "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 128,
+        "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens": 20,
+        "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+        },
+        "total_tokens": 198
+        }
+        }
+        "@
+        
         
     .NOTES
         This function uses PSFramework for logging and exception handling.
@@ -55,101 +111,37 @@ function Invoke-ADOAzureOpenAI {
         [string]$OpenAIEndpoint,
         [Parameter(Mandatory = $true)]
         [string]$OpenAIApiKey,
-        [Parameter(Mandatory = $true)]
-        [string]$CodebasePath,
-        [Alias("UserQuery")]
-        [string]$Prompt,
-        [Parameter(Mandatory = $true)]
-        [Alias("Filenames")]
-        [array]$Files = @(),
-        [array]$ExcludedFolders = @(".git", "node_modules", ".vscode"),
-        [array]$FileExtensions = @(".al", ".json", ".xml", ".txt")
+        [Array]$Messages
     )
-    begin{
-
-        $IndexPath = "c:\temp\codebase_index.json"
+    begin{       
         $ErrorActionPreference = "Stop"
-
-        # Validate parameters
-        if (-not (Test-Path $CodebasePath)) {
-            throw "The specified codebase path does not exist: $CodebasePath"
-        }        
         Invoke-TimeSignal -Start
+        Write-PSFMessage -Level Verbose -Message "Starting Azure OpenAI request."
+        
+        # Validate messages array
+        if (-not $Messages -or $Messages.Count -eq 0) {
+            throw "The Messages parameter cannot be null or empty."
+        }
+
+        $body = @{
+            messages = $Messages
+        } | ConvertTo-Json -Depth 10
+
+        $headers = @{
+            "Content-Type" = "application/json"
+            "api-key" = $OpenAIApiKey
+        }
     }
     process{
         if (Test-PSFFunctionInterrupt) { return }
 
         try {
-            # Step 1: Index the codebase
-            Write-PSFMessage -Level Host -Message "Indexing the codebase at path: $CodebasePath"
-            $index = @()
-    
-            If(-not (Test-Path $IndexPath)) {
-                $null = New-Item -Path $IndexPath -ItemType File -Force
-            }
-    
-            Get-ChildItem -Path $CodebasePath -Recurse -File | Where-Object {
-                ($FileExtensions -contains $_.Extension) -and
-                ($ExcludedFolders -notcontains $_.DirectoryName.Split('\')[-1])
-            } | ForEach-Object {
-                $filePath = $_.FullName
-                $content = Get-Content -Path $filePath -Raw
-                $index += @{
-                    FilePath = "$filePath"
-                    Content = $content
-                }
-            }
-    
-            $index | ConvertTo-Json -Depth 10 | Set-Content -Path $IndexPath
-            Write-PSFMessage -Level Host -Message "Indexing completed. Output saved to: $IndexPath"
-    
-            # Step 2: Search the codebase
-            Write-PSFMessage -Level Host -Message "Searching the codebase for relevant files."
-            $index = Get-Content -Path $IndexPath | ConvertFrom-Json
-            $context = @()
-    
-            foreach ($file in $index) {
-                if ($file.Content -match [regex]::Escape("")) {
-                    $context += @{
-                        FilePath = $file.FilePath
-                        Snippet = $file.Content -replace "(?s).{0,50}" + [regex]::Escape("") + ".{0,50}", "...$&..."
-                    }
-                }
-            }
-    
-            Write-PSFMessage -Level Host -Message "Filtering results based on provided filenames."
-            $context = $context | Where-Object {
-                $filePath = $_.FilePath
-                $Files | ForEach-Object { $filePath -like "*$_" } | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
-            }
-    
-            Write-PSFMessage -Level Host -Message "Search completed. Found $($context.Count) matching files."
-    
-            # Step 3: Query Azure OpenAI
-            Write-PSFMessage -Level Host -Message "Sending request to Azure OpenAI for code review."
-            $fullPrompt = "You are an assistant that helps with code suggestions. Here is the context:\n"
-            foreach ($snippet in $context) {
-                $fullPrompt += "File: $($snippet.FilePath)\nCode:\n$($snippet.Snippet)\n\n"
-            }
-            $fullPrompt += "User Prompt: $Prompt"
-    
-            $body = @{
-                messages = @(
-                    @{ role = "system"; content = "You are a helpful assistant for code suggestions." },
-                    @{ role = "user"; content = $fullPrompt }
-                )
-            } | ConvertTo-Json -Depth 10
-    
-            $headers = @{
-                "Content-Type" = "application/json"
-                "api-key" = $OpenAIApiKey
-            }
-    
             $response = Invoke-RestMethod -Uri $OpenAIEndpoint -Method Post -Headers $headers -Body $body
-            Write-PSFMessage -Level Host -Message "Azure OpenAI response received."
+            Write-PSFMessage -Level Verbose -Message "Azure OpenAI response received."
     
             # Output the response
-            return $response.choices[0].message.content
+            return $response | Select-PSFObject *
+
         } catch {
             Write-PSFMessage -Level Error -Message "An error occurred: $($_.Exception.Message)"
             throw
@@ -157,7 +149,7 @@ function Invoke-ADOAzureOpenAI {
     }
     end{
         # Log the end of the operation
-        Write-PSFMessage -Level Host -Message "Request completed."
+        Write-PSFMessage -Level Verbose -Message "Request completed."
         Invoke-TimeSignal -End
     }
 }

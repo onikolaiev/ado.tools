@@ -5,7 +5,7 @@ online version:
 schema: 2.0.0
 ---
 
-# Invoke-ADOAzureOpenAI
+# Invoke-ADOAICodeReview
 
 ## SYNOPSIS
 Performs a code review of a Microsoft Dynamics 365 Business Central AL codebase using Azure OpenAI.
@@ -13,7 +13,8 @@ Performs a code review of a Microsoft Dynamics 365 Business Central AL codebase 
 ## SYNTAX
 
 ```
-Invoke-ADOAzureOpenAI [-OpenAIEndpoint] <String> [-OpenAIApiKey] <String> [[-Messages] <Array>]
+Invoke-ADOAICodeReview [-OpenAIEndpoint] <String> [-OpenAIApiKey] <String> [-CodebasePath] <String>
+ [[-Prompt] <String>] [-Files] <Array> [[-ExcludedFolders] <Array>] [[-FileExtensions] <Array>]
  [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
@@ -28,18 +29,17 @@ It generates a report based on the provided user query and context extracted fro
 # Define the required parameters
 $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
-$prompt = "Who are you?"
-$messages = @(
-@{ role = "system"; content = "You are a helpful assistant." },
-@{ role = "user"; content = $prompt }
-)
+$codebasePath = "C:\Projects\MyCodebase"
+$prompt = "Analyze the code for bugs and improvements."
+$filenames = @("example1.al", "example2.al")
 ```
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint \`
         -OpenAIApiKey $openaiApiKey \`
         -CodebasePath $codebasePath \`
-        -Messages $messages
+        -Prompt $prompt \`
+        -Files $filenames
 
 ## PARAMETERS
 
@@ -73,8 +73,54 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Messages
-The messages to be sent to Azure OpenAI.
+### -CodebasePath
+The path to the codebase to be indexed and reviewed.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: True
+Position: 3
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Prompt
+The  prompt to be sent to Azure OpenAI for code review.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: UserQuery
+
+Required: False
+Position: 4
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Files
+(Optional) A list of specific file to search for in the codebase.
+Provide a paths to the files.
+
+```yaml
+Type: Array
+Parameter Sets: (All)
+Aliases: Filenames
+
+Required: True
+Position: 5
+Default value: @()
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ExcludedFolders
+(Optional) A list of folder names to exclude from indexing.
 
 ```yaml
 Type: Array
@@ -82,8 +128,23 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 3
-Default value: None
+Position: 6
+Default value: @(".git", "node_modules", ".vscode")
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -FileExtensions
+(Optional) A list of file extensions to include in the indexing process.
+
+```yaml
+Type: Array
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 7
+Default value: @(".al", ".json", ".xml", ".txt")
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -110,68 +171,6 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
-### Returns a hashtable containing the response from Azure OpenAI.
-### The hashtable includes the following keys:
-###         - id
-###         - object
-###         - created
-###         - model
-###         - usage
-###         - choices
-### #Example response
-### @"
-### {
-### "model": "o1-2024-12-17",
-### "created": 1745923901,
-### "object": "chat.completion",
-### "id": "chatcmpl-BRcqr2gTdJH2EeL63R3jEM5ZVOpUD",
-### "choices": [
-### {
-### "content_filter_results": {
-### "hate": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "self_harm": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "sexual": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "violence": {
-### "filtered": false,
-### "severity": "safe"
-### }
-### },
-### "finish_reason": "stop",
-### "index": 0,
-### "logprobs": null,
-### "message": {
-### "content": "I'm ChatGPT, a large language model trained by OpenAI. I'm here to help you with your questions, provide information, and engage in conversation. How can I assist you today?",
-### "refusal": null,
-### "role": "assistant"
-### }
-### }
-### ],
-### "usage": {
-### "completion_tokens": 178,
-### "completion_tokens_details": {
-### "accepted_prediction_tokens": 0,
-### "audio_tokens": 0,
-### "reasoning_tokens": 128,
-### "rejected_prediction_tokens": 0
-### },
-### "prompt_tokens": 20,
-### "prompt_tokens_details": {
-### "audio_tokens": 0,
-### "cached_tokens": 0
-### },
-### "total_tokens": 198
-### }
-### }
-### "@
 ## NOTES
 This function uses PSFramework for logging and exception handling.
 

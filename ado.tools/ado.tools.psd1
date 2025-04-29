@@ -52,7 +52,7 @@ PowerShellVersion = '5.0'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(@{ModuleName = 'PSFramework'; ModuleVersion = '1.12.346'; }, 
-               @{ModuleName = 'ado.core'; ModuleVersion = '1.0.3'; })
+                    @{ModuleName = 'ado.core'; ModuleVersion = '1.0.3'; })
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -70,7 +70,9 @@ FormatsToProcess = 'xml\ado.tools.Format.ps1xml'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Invoke-ADOProjectMigration', 'Invoke-ADOAzureOpenAI'
+FunctionsToExport = 'Invoke-ADOProjectMigration',
+                    'Invoke-ADOAzureOpenAI',
+                    'Invoke-ADOAICodeReview'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

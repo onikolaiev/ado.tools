@@ -27,6 +27,9 @@ function Format-Help ($text) {
             if ($line.StartsWith(".")) {
                 "    $line"
             }
+            elseif ($line.StartsWith("-")) {
+                "                $line"
+            }
             else {
                 "        $line"
             }

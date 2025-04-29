@@ -37,11 +37,11 @@
         $targetOrgToken = "targetOrgToken"
         
         Invoke-ADOProjectMigration -SourceOrganization $sourceOrg `
-        -TargetOrganization $targetOrg `
-        -SourceProjectName $sourceProjectName `
-        -TargetProjectName $targetProjectName `
-        -SourceOrganizationToken $sourceOrgToken `
-        -TargetOrganizationToken $targetOrgToken
+                -TargetOrganization $targetOrg `
+                -SourceProjectName $sourceProjectName `
+                -TargetProjectName $targetProjectName `
+                -SourceOrganizationToken $sourceOrgToken `
+                -TargetOrganizationToken $targetOrgToken
         
         This example migrates the project "sourceProject" from the organization "sourceOrg" to the organization "targetOrg".
         
