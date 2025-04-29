@@ -2,7 +2,11 @@
 # based on https://gist.github.com/Splaxi/ff7485a24f6ed9937f3e8da76b5d4840
 # See also https://github.com/fscpscollaborative/fscps.tools/wiki/Building-tools
 $path = "$PSScriptRoot\..\ado.tools"
-
+# Path to the .psd1 file
+$psd1Path = "$path\ado.tools.psd1"
+$psd1Data = Import-PowerShellDataFile -Path $psd1Path
+# Extract the Author field
+$author = $psd1Data.Author
 function Get-Header ($text) {
     $start = $text.IndexOf('<#')
     $temp = $start - 2
@@ -55,11 +59,32 @@ function Format-Help ($text) {
         if ($trimmed -match '\{$') { $indentLevel++ }
     }
     $cnt = 0
-    foreach ($line in $formattedHelp.Split("`n")) {
+    $lines = $formattedHelp.Split("`n")
+
+    foreach ($line in $lines) {
         if($cnt -eq 0 -and (($line -match '^[\s]*$'))) {
             $cnt++
             continue
         }
+
+        # Check for .NOTES node
+        if ($line -match '\.NOTES') {
+            $foundNotes = $true
+        }
+
+        # Check if the author is already present
+        if ($line -match [regex]::Escape($author)) {
+            $foundAuthor = $true
+        }
+
+
+        # If it's the last line and .NOTES exists but no author, add the author
+        if ($cnt -eq $lines.Length - 1 -and $foundNotes -and -not $foundAuthor) {
+            $line
+            Write-Host "Adding author to .NOTES section."
+            $line = "        Author: $author"
+        }
+
         $line
         $cnt++
     }
