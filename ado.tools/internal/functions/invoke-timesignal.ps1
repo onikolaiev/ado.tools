@@ -30,7 +30,6 @@
         
         Original Author: Mötz Jensen (@Splaxi)
         Author: Oleksandr Nikolaiev (@onikolaiev)
-        
 #>
 function Invoke-TimeSignal {
     [CmdletBinding(DefaultParameterSetName = 'Start')]

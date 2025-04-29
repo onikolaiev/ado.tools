@@ -37,9 +37,9 @@
         # Example 1: Process a single work item and create it in the target project
         
         Invoke-ADOWorkItemsProcessing -SourceWorkItem $sourceWorkItem -SourceOrganization "source-org" `
-                -SourceProjectName "source-project" -SourceToken "source-token" `
-                -TargetOrganization "target-org" -TargetProjectName "target-project" `
-                -TargetToken "target-token" -TargetWorkItemList ([ref]$targetWorkItemList)
+            -SourceProjectName "source-project" -SourceToken "source-token" `
+            -TargetOrganization "target-org" -TargetProjectName "target-project" `
+            -TargetToken "target-token" -TargetWorkItemList ([ref]$targetWorkItemList)
         
     .NOTES
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
