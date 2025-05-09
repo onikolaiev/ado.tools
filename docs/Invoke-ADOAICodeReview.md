@@ -14,8 +14,8 @@ Performs a code review of a Microsoft Dynamics 365 Business Central AL codebase 
 
 ```
 Invoke-ADOAICodeReview [-OpenAIEndpoint] <String> [-OpenAIApiKey] <String> [-CodebasePath] <String>
- [[-Prompt] <String>] [-Files] <Array> [[-ExcludedFolders] <Array>] [[-FileExtensions] <Array>]
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [[-Prompt] <String>] [-Files] <Array> [[-Language] <DevelopmentLanguage>] [[-ExcludedFolders] <Array>]
+ [[-FileExtensions] <Array>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -36,10 +36,10 @@ $filenames = @("example1.al", "example2.al")
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint \`
-        -OpenAIApiKey $openaiApiKey \`
-        -CodebasePath $codebasePath \`
-        -Prompt $prompt \`
-        -Files $filenames
+    -OpenAIApiKey $openaiApiKey \`
+    -CodebasePath $codebasePath \`
+    -Prompt $prompt \`
+    -Files $filenames
 
 ## PARAMETERS
 
@@ -119,6 +119,23 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -Language
+(Optional) The programming language of the codebase.
+Default is \[DevelopmentLanguage\]::Other.
+
+```yaml
+Type: DevelopmentLanguage
+Parameter Sets: (All)
+Aliases:
+Accepted values: Morphix, AL, Other
+
+Required: False
+Position: 6
+Default value: Other
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -ExcludedFolders
 (Optional) A list of folder names to exclude from indexing.
 
@@ -128,7 +145,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 6
+Position: 7
 Default value: @(".git", "node_modules", ".vscode")
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -143,7 +160,7 @@ Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 7
+Position: 8
 Default value: @(".al", ".json", ".xml", ".txt")
 Accept pipeline input: False
 Accept wildcard characters: False

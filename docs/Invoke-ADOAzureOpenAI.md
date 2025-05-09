@@ -30,16 +30,16 @@ $openaiEndpoint = "https://YourAzureOpenApiEndpoint"
 $openaiApiKey = "your-api-key"
 $prompt = "Who are you?"
 $messages = @(
-@{ role = "system"; content = "You are a helpful assistant." },
-@{ role = "user"; content = $prompt }
+    @{ role = "system"; content = "You are a helpful assistant." },
+    @{ role = "user"; content = $prompt }
 )
 ```
 
 # Call the function
 Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint \`
-        -OpenAIApiKey $openaiApiKey \`
-        -CodebasePath $codebasePath \`
-        -Messages $messages
+    -OpenAIApiKey $openaiApiKey \`
+    -CodebasePath $codebasePath \`
+    -Messages $messages
 
 ## PARAMETERS
 
@@ -112,64 +112,64 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ### Returns a hashtable containing the response from Azure OpenAI.
 ### The hashtable includes the following keys:
-###         - id
-###         - object
-###         - created
-###         - model
-###         - usage
-###         - choices
+###     - id
+###     - object
+###     - created
+###     - model
+###     - usage
+###     - choices
 ### #Example response
 ### @"
 ### {
-### "model": "o1-2024-12-17",
-### "created": 1745923901,
-### "object": "chat.completion",
-### "id": "chatcmpl-BRcqr2gTdJH2EeL63R3jEM5ZVOpUD",
-### "choices": [
-### {
-### "content_filter_results": {
-### "hate": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "self_harm": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "sexual": {
-### "filtered": false,
-### "severity": "safe"
-### },
-### "violence": {
-### "filtered": false,
-### "severity": "safe"
-### }
-### },
-### "finish_reason": "stop",
-### "index": 0,
-### "logprobs": null,
-### "message": {
-### "content": "I'm ChatGPT, a large language model trained by OpenAI. I'm here to help you with your questions, provide information, and engage in conversation. How can I assist you today?",
-### "refusal": null,
-### "role": "assistant"
-### }
-### }
-### ],
-### "usage": {
-### "completion_tokens": 178,
-### "completion_tokens_details": {
-### "accepted_prediction_tokens": 0,
-### "audio_tokens": 0,
-### "reasoning_tokens": 128,
-### "rejected_prediction_tokens": 0
-### },
-### "prompt_tokens": 20,
-### "prompt_tokens_details": {
-### "audio_tokens": 0,
-### "cached_tokens": 0
-### },
-### "total_tokens": 198
-### }
+###     "model": "o1-2024-12-17",
+###     "created": 1745923901,
+###     "object": "chat.completion",
+###     "id": "chatcmpl-BRcqr2gTdJH2EeL63R3jEM5ZVOpUD",
+###     "choices": [
+###     {
+###         "content_filter_results": {
+###             "hate": {
+###                 "filtered": false,
+###                 "severity": "safe"
+###             },
+###             "self_harm": {
+###                 "filtered": false,
+###                 "severity": "safe"
+###             },
+###             "sexual": {
+###                 "filtered": false,
+###                 "severity": "safe"
+###             },
+###             "violence": {
+###                 "filtered": false,
+###                 "severity": "safe"
+###             }
+###         },
+###         "finish_reason": "stop",
+###         "index": 0,
+###         "logprobs": null,
+###         "message": {
+###             "content": "I'm ChatGPT, a large language model trained by OpenAI. I'm here to help you with your questions, provide information, and engage in conversation. How can I assist you today?",
+###             "refusal": null,
+###             "role": "assistant"
+###         }
+###     }
+###     ],
+###     "usage": {
+###         "completion_tokens": 178,
+###         "completion_tokens_details": {
+###             "accepted_prediction_tokens": 0,
+###             "audio_tokens": 0,
+###             "reasoning_tokens": 128,
+###             "rejected_prediction_tokens": 0
+###         },
+###         "prompt_tokens": 20,
+###         "prompt_tokens_details": {
+###             "audio_tokens": 0,
+###             "cached_tokens": 0
+###         },
+###         "total_tokens": 198
+###     }
 ### }
 ### "@
 ## NOTES

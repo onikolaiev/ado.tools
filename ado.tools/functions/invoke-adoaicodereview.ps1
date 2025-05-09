@@ -22,6 +22,9 @@
     .PARAMETER Files
         (Optional) A list of specific file to search for in the codebase. Provide a paths to the files.
         
+    .PARAMETER Language
+        (Optional) The programming language of the codebase. Default is [DevelopmentLanguage]::Other.
+        
     .PARAMETER ExcludedFolders
         (Optional) A list of folder names to exclude from indexing.
         
@@ -62,6 +65,8 @@ function Invoke-ADOAICodeReview {
         [Parameter(Mandatory = $true)]
         [Alias("Filenames")]
         [array]$Files = @(),
+        [Parameter(Mandatory = $false)]
+        [DevelopmentLanguage]$Language = [DevelopmentLanguage]::Other,
         [array]$ExcludedFolders = @(".git", "node_modules", ".vscode"),
         [array]$FileExtensions = @(".al", ".json", ".xml", ".txt")
     )
@@ -81,7 +86,7 @@ function Invoke-ADOAICodeReview {
 
         try {
             # Step 1: Index the codebase
-            Write-PSFMessage -Level Host -Message "Indexing the codebase at path: $CodebasePath"
+            Write-PSFMessage -Level Verbose -Message "Indexing the codebase at path: $CodebasePath"
             $index = @()
     
             If(-not (Test-Path $IndexPath)) {
@@ -107,30 +112,55 @@ function Invoke-ADOAICodeReview {
                 $filePath = $_.FullName
                 try {
                     $content = Get-Content -Path $filePath -Raw
-                    # Extract only the content inside CDATA tags
-                    $cleanedContent = [regex]::Matches($content, "<!\[CDATA\[(.*?)\]\]>", [System.Text.RegularExpressions.RegexOptions]::Singleline) |
-                        ForEach-Object { $_.Groups[1].Value }
-            
-                    # Combine all extracted CDATA content into a single string (if there are multiple CDATA sections)
-                    $cleanedContent = $cleanedContent -join "`n"
-            
-                    # Add the cleaned content to the index if it's not empty
-                    if (-not [string]::IsNullOrWhiteSpace($cleanedContent)) {
-                        $index += @{
-                            FilePath = "$filePath"
-                            Content = $cleanedContent
+                    switch ($Language) {
+                        [DevelopmentLanguage]::AL {
+                            # Handle AL specific parsing if needed
+                            $content = $content -replace "\r?\n", "`n" # Normalize line endings
+                            if (-not [string]::IsNullOrWhiteSpace($content)) {
+                                $index += @{
+                                    FilePath = "$filePath"
+                                    Content = $content
+                                }
+                            }
                         }
-                    }
+                        [DevelopmentLanguage]::Morphix {
+                            # Handle other languages if needed
+                            $content = $content -replace "\r?\n", "`n" # Normalize line endings
+                            # Extract only the content inside CDATA tags
+                            $cleanedContent = [regex]::Matches($content, "<!\[CDATA\[(.*?)\]\]>", [System.Text.RegularExpressions.RegexOptions]::Singleline) | ForEach-Object { $_.Groups[1].Value }
+                                        
+                            # Combine all extracted CDATA content into a single string (if there are multiple CDATA sections)
+                            $cleanedContent = $cleanedContent -join "`n"
+
+                            # Add the cleaned content to the index if it's not empty
+                            if (-not [string]::IsNullOrWhiteSpace($cleanedContent)) {
+                                $index += @{
+                                    FilePath = "$filePath"
+                                    Content = $cleanedContent
+                                }
+                            }
+                        }
+                        Default {
+                            # Handle default case
+                            $content = $content -replace "\r?\n", "`n" # Normalize line endings
+                            if (-not [string]::IsNullOrWhiteSpace($content)) {
+                                $index += @{
+                                    FilePath = "$filePath"
+                                    Content = $content
+                                }
+                            }
+                        }
+                    }                    
                 } catch {
                     Write-PSFMessage -Level Error -Message "Failed to process file: $filePath. Error: $_"
                 }
             }
     
             $index | ConvertTo-Json -Depth 10 | Set-Content -Path $IndexPath
-            Write-PSFMessage -Level Host -Message "Indexing completed. Output saved to: $IndexPath"
+            Write-PSFMessage -Level Verbose -Message "Indexing completed. Output saved to: $IndexPath"
     
             # Step 2: Search the codebase
-            Write-PSFMessage -Level Host -Message "Searching the codebase for relevant files."
+            Write-PSFMessage -Level Verbose -Message "Searching the codebase for relevant files."
             $index = Get-Content -Path $IndexPath | ConvertFrom-Json
             $context = @()
     
@@ -143,13 +173,13 @@ function Invoke-ADOAICodeReview {
                 }
             }
     
-            Write-PSFMessage -Level Host -Message "Filtering results based on provided filenames."
+            Write-PSFMessage -Level Verbose -Message "Filtering results based on provided filenames."
             $context = $context | Where-Object {
                 $filePath = $_.FilePath
                 $Files | ForEach-Object { $filePath -like "*$_" } | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
             }
     
-            Write-PSFMessage -Level Host -Message "Search completed. Found $($context.Count) matching files."
+            Write-PSFMessage -Level Verbose -Message "Search completed. Found $($context.Count) matching files."
     
             # Step 3: Query Azure OpenAI
             Write-PSFMessage -Level Host -Message "Sending request to Azure OpenAI for code review."
@@ -176,7 +206,7 @@ function Invoke-ADOAICodeReview {
     }
     end{
         # Log the end of the operation
-        Write-PSFMessage -Level Host -Message "Request completed."
+        Write-PSFMessage -Level Verbose -Message "Request completed."
         Invoke-TimeSignal -End
     }
 }
