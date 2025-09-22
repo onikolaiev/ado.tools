@@ -283,28 +283,31 @@ function Invoke-ADOProjectMigration {
         Write-PSFMessage -Level Host -Message "Starting to process picklists."
         $sourcePicklists = (Get-ADOPickListList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion)
         $targetPicklists = (Get-ADOPickListList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion)
-        $sourcePicklists | ForEach-Object {
-            $picklist = $_
-            $picklist
-            Write-PSFMessage -Level Host -Message "Checking picklist '$($picklist.name)' in target process."
-            $targetPicklist = $targetPicklists.Where({$_.name -eq $picklist.name})
-            
-            if (-not $targetPicklist) {
-                Write-PSFMessage -Level Verbose -Message "Picklist '$($picklist.name)' does not exist in target process. Adding it."
-                $sourcePicklist = Get-ADOPickList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ListId "$($picklist.id)"
-                $body = @{
-                    name = $sourcePicklist.name
-                    type = $sourcePicklist.type
-                    isSuggested = $sourcePicklist.isSuggested
-                    items = $sourcePicklist.items
+        if($sourcePicklists.Count -ge 0)
+        {
+            $sourcePicklists | ForEach-Object {
+                $picklist = $_
+                Write-PSFMessage -Level Host -Message "Checking picklist '$($picklist.name)' in target process."
+                $targetPicklist = $targetPicklists.Where({$_.name -eq $picklist.name})
+                
+                if (-not $targetPicklist) {
+                    Write-PSFMessage -Level Verbose -Message "Picklist '$($picklist.name)' does not exist in target process. Adding it."
+                    $sourcePicklist = Get-ADOPickList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ListId "$($picklist.id)"
+                    $body = @{
+                        name = $sourcePicklist.name
+                        type = $sourcePicklist.type
+                        isSuggested = $sourcePicklist.isSuggested
+                        items = $sourcePicklist.items
+                    }
+                    $body = $body | ConvertTo-Json -Depth 10
+                    Write-PSFMessage -Level Host -Message "Adding picklist '$($sourcePicklist.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
+                    $targetPicklist = Add-ADOPickList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -Body $body
+                } else {
+                    Write-PSFMessage -Level Host -Message "Picklist '$($picklist.name)' already exists in target process. Skipping."
                 }
-                $body = $body | ConvertTo-Json -Depth 10
-                Write-PSFMessage -Level Host -Message "Adding picklist '$($sourcePicklist.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                $targetPicklist = Add-ADOPickList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -Body $body
-            } else {
-                Write-PSFMessage -Level Host -Message "Picklist '$($picklist.name)' already exists in target process. Skipping."
             }
         }
+        
         Convert-FSCPSTextToAscii -Text "Migrate states.." -Font "Standard" 
         ## Process States
         Write-PSFMessage -Level Host -Message "Starting to process states for work item types."
@@ -314,37 +317,40 @@ function Invoke-ADOProjectMigration {
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
             $sourceStates = (Get-ADOWorkItemTypeStateList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")
             $targetStates = (Get-ADOWorkItemTypeStateList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
-            $sourceStates | ForEach-Object {
-                $state = $_
-                Write-PSFMessage -Level Host -Message "Checking state '$($state.name)' in target process."
-                $targetState = $targetStates.Where({$_.name -eq $state.name})
-                $sourceState = Get-ADOWorkItemTypeState -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -StateId "$($state.id)"
-                    
-                if (-not $targetState) {
-                    Write-PSFMessage -Level Host -Message "State '$($state.name)' does not exist in target process. Adding it."
-                    $body = @{
-                        name = $sourceState.name
-                        color = $sourceState.color
-                        stateCategory = $sourceState.stateCategory
-                        order = $sourceState.order
+            if($sourceStates.Count -ge 0)
+            { 
+                $sourceStates | ForEach-Object {
+                    $state = $_
+                    Write-PSFMessage -Level Host -Message "Checking state '$($state.name)' in target process."
+                    $targetState = $targetStates.Where({$_.name -eq $state.name})
+                    $sourceState = Get-ADOWorkItemTypeState -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -StateId "$($state.id)"
+                        
+                    if (-not $targetState) {
+                        Write-PSFMessage -Level Host -Message "State '$($state.name)' does not exist in target process. Adding it."
+                        $body = @{
+                            name = $sourceState.name
+                            color = $sourceState.color
+                            stateCategory = $sourceState.stateCategory
+                            order = $sourceState.order
+                        }
+                        $body = $body | ConvertTo-Json -Depth 10
+                        Write-PSFMessage -Level Verbose -Message "Adding state '$($sourceState.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
+                        $targetState = Add-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    } else {
+                        Write-PSFMessage -Level Host -Message "State '$($state.name)' already exists in target process. Skipping."
                     }
-                    $body = $body | ConvertTo-Json -Depth 10
-                    Write-PSFMessage -Level Verbose -Message "Adding state '$($sourceState.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetState = Add-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
-                } else {
-                    Write-PSFMessage -Level Host -Message "State '$($state.name)' already exists in target process. Skipping."
+
+                    if ($sourceState.hidden) { 
+                            try {
+                                Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
+                                $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true" -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+
+                            }
+                            catch {
+                                Write-PSFMessage -Level Warning -Message "Failed to hide state '$($sourceState.name)' in target process. The state is already hidden"    
+                            }
+                        }   
                 }
-
-                if ($sourceState.hidden) { 
-                        try {
-                            Write-PSFMessage -Level Verbose -Message "Hiding state '$($sourceState.name)' in target process."
-                            $targetState = Hide-ADOWorkItemTypeState -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -StateId "$($targetState.id)" -Hidden "true" -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
-
-                        }
-                        catch {
-                            Write-PSFMessage -Level Warning -Message "Failed to hide state '$($sourceState.name)' in target process. The state is already hidden"    
-                        }
-                    }   
             }
         }
         Convert-FSCPSTextToAscii -Text "Migrate rules.." -Font "Standard" 
@@ -356,24 +362,27 @@ function Invoke-ADOProjectMigration {
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})    
             $sourceRules = (Get-ADOWorkItemTypeRuleList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)").Where({$_.customizationType -ne 'system'})  
             $targetRules = (Get-ADOWorkItemTypeRuleList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)").Where({$_.customizationType -ne 'system'}) 
-            $sourceRules | ForEach-Object {
-                $rule = $_
-                Write-PSFMessage -Level Host -Message "Checking rule '$($rule.name)' in target process."
-                $targetRule = $targetRules.Where({$_.name -eq $rule.name})
-                if (-not $targetRule) {
-                    Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' does not exist in target process. Adding it."
-                    $sourceRule = Get-ADOWorkItemTypeRule -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -RuleRefName "$($rule.referenceName)"
-                    $body = @{
-                        name = $sourceRule.name
-                        conditions = $sourceRule.conditions
-                        actions = $sourceRule.actions
-                        isDisabled = $sourceRule.isDisabled
+            if($sourceRules.Count -ge 0)
+            { 
+                $sourceRules | ForEach-Object {
+                    $rule = $_
+                    Write-PSFMessage -Level Host -Message "Checking rule '$($rule.name)' in target process."
+                    $targetRule = $targetRules.Where({$_.name -eq $rule.name})
+                    if (-not $targetRule) {
+                        Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' does not exist in target process. Adding it."
+                        $sourceRule = Get-ADOWorkItemTypeRule -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)" -RuleRefName "$($rule.referenceName)"
+                        $body = @{
+                            name = $sourceRule.name
+                            conditions = $sourceRule.conditions
+                            actions = $sourceRule.actions
+                            isDisabled = $sourceRule.isDisabled
+                        }
+                        $body = $body | ConvertTo-Json -Depth 10
+                        Write-PSFMessage -Level Host -Message "Adding rule '$($sourceRule.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
+                        $targetRule = Add-ADOWorkItemTypeRule -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
+                    } else {
+                        Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' already exists in target process. Skipping."
                     }
-                    $body = $body | ConvertTo-Json -Depth 10
-                    Write-PSFMessage -Level Host -Message "Adding rule '$($sourceRule.name)' to target process '$($targetProjectProcess.name)' with the following details: $($body)"
-                    $targetRule = Add-ADOWorkItemTypeRule -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)" -Body $body
-                } else {
-                    Write-PSFMessage -Level Host -Message "Rule '$($rule.name)' already exists in target process. Skipping."
                 }
             }
         }
