@@ -285,6 +285,7 @@ function Invoke-ADOProjectMigration {
         $targetPicklists = (Get-ADOPickListList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion)
         $sourcePicklists | ForEach-Object {
             $picklist = $_
+            $picklist
             Write-PSFMessage -Level Host -Message "Checking picklist '$($picklist.name)' in target process."
             $targetPicklist = $targetPicklists.Where({$_.name -eq $picklist.name})
             

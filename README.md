@@ -39,60 +39,6 @@ Update-Module -Name ado.tools -Force
 
 ## Available Functions
 
-# **Invoke-ADOAzureOpenAI**
-
-The `Invoke-ADOAzureOpenAI` function integrates with Azure OpenAI to analyze and review codebases. It indexes the codebase, searches for relevant files, and queries Azure OpenAI to generate insights, such as identifying bugs, code smells, and improvements.
-
----
-
-## **Parameters**
-
-### `-OpenAIEndpoint`
-- **Description**: The Azure OpenAI endpoint URL.
-- **Type**: `string`
-- **Mandatory**: Yes
-
-### `-OpenAIApiKey`
-- **Description**: The API key for authenticating with Azure OpenAI.
-- **Type**: `string`
-- **Mandatory**: Yes
-
-### `-CodebasePath`
-- **Description**: The path to the codebase to be indexed and reviewed.
-- **Type**: `string`
-- **Mandatory**: Yes
-
-### `-Prompt`
-- **Description**: The prompt that will be send to the LLM within the codebase.    
-- **Type**: `string`
-- **Mandatory**: Yes
-
-### `-Files`
-- **Description**: A list of specific files from the codebase that should be analize.
-- **Type**: `array`
-- **Mandatory**: Yes
-
----
-
-## **Examples**
-
-### Example 1: Basic Usage
-**Description**: Analyze a codebase for bugs and improvements using Azure OpenAI.
-```powershell
-# Define the required parameters
-$openaiEndpoint = "https://YourAzureOpenApiEndpoint"
-$openaiApiKey = "your-api-key"
-$codebasePath = "C:\Projects\MyCodebase"
-$prompt = "Analyze the code for bugs and improvements."
-$filesToAnalize = @("example1.al", "example2.al")
-
-# Call the function
-Invoke-ADOAzureOpenAI -OpenAIEndpoint $openaiEndpoint `
-                      -OpenAIApiKey $openaiApiKey `
-                      -CodebasePath $codebasePath `
-                      -Prompt $prompt `
-                      -Files $filesToAnalize
-```
 # **Invoke-ADOProjectMigration**
 
 The `Invoke-ADOProjectMigration` function facilitates the migration of a project from one Azure DevOps organization to another/same. It retrieves the source project details, validates its existence, and prepares for migration to the target organization.
