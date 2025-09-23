@@ -84,15 +84,15 @@ function Invoke-ADOProjectMigration {
 
         # Log start of migration
         Write-PSFMessage -Level Host -Message "Starting migration from source organization '$sourceOrganization' to target organization '$targetOrganization'."
-        Convert-FSCPSTextToAscii -Text "Start migration" -Font "Standard" 
+        Convert-FSCPSTextToAscii -Text "Start migration" -Font "Standard"
         ## GETTING THE SOURCE PROJECT INFORMATION 
-        Write-PSFMessage -Level Host -Message "Fetching source project '$sourceProjectName' from organization '$sourceOrganization'."
-        $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
+        Write-PSFMessage -Level Host -Message "Fetching source project '$SourceProjectName' from organization '$sourceOrganization'."
+        $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -StateFilter All).Where({$_.name -eq $SourceProjectName})
         if (-not $sourceProjecttmp) {
-            Write-PSFMessage -Level Error -Message "Source project '$sourceProjectName' not found in organization '$sourceOrganization'. Exiting."
+            Write-PSFMessage -Level Error -Message "Source project '$SourceProjectName' not found in organization '$sourceOrganization'. Exiting."
             return
         }
-        Write-PSFMessage -Level Host -Message "Source project '$sourceProjectName' found. Fetching detailed information."
+        Write-PSFMessage -Level Host -Message "Source project '$SourceProjectName' found. Fetching detailed information."
         $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
         $sourceProjectVersionControl = $sourceProject.capabilities.versioncontrol
         $sourceProjectProcess = Get-ADOProcess -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessTypeId "$($sourceProject.capabilities.processTemplate.templateTypeId)"
@@ -497,8 +497,8 @@ function Invoke-ADOProjectMigration {
         Write-PSFMessage -Level Host -Message "Fetching source project '$($sourceProjecttmp.name)' from organization '$($sourceOrganization)'."
         $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
 
-        Write-PSFMessage -Level Host -Message "Checking if target project '$($sourceProjectName)' exists in organization '$($targetOrganization)'."
-        $targetProject = (Get-ADOProjectList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -StateFilter All).Where({$_.name -eq $sourceProjectName})
+        Write-PSFMessage -Level Host -Message "Checking if target project '$($($sourceProject.name))' exists in organization '$($targetOrganization)'."
+        $targetProject = (Get-ADOProjectList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $apiVersion -StateFilter All).Where({$_.name -eq $($sourceProject.name)})
 
         if (-not $targetProject) {
             Write-PSFMessage -Level Verbose -Message "Target project '$($targetProjectName)' does not exist in organization '$($targetOrganization)'. Creating a new project."
@@ -547,7 +547,7 @@ function Invoke-ADOProjectMigration {
         }
 
         #PROCESSING WORK ITEM
-        $sourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken -ApiVersion $ApiVersion)
+        $sourceWorkItemsList = (Get-ADOSourceWorkItemsList -SourceOrganization $sourceOrganization -SourceProjectName $($sourceProject.name) -SourceToken $sourceOrganizationtoken -ApiVersion $ApiVersion)
         $targetWorkItemList = @{}
      
         $sourceWorkItemsList |  ForEach-Object {
@@ -557,13 +557,13 @@ function Invoke-ADOProjectMigration {
             if ($workItemExists) {
                 continue;
             }
-            Invoke-ADOWorkItemsProcessing -SourceWorkItem $sourceWorkItem -SourceOrganization $sourceOrganization -SourceProjectName $sourceProjectName -SourceToken $sourceOrganizationtoken -TargetOrganization $targetOrganization `
+            Invoke-ADOWorkItemsProcessing -SourceWorkItem $sourceWorkItem -SourceOrganization $sourceOrganization -SourceProjectName $($sourceProject.name) -SourceToken $sourceOrganizationtoken -TargetOrganization $targetOrganization `
             -TargetProjectName $targetProjectName -TargetToken $targetOrganizationtoken `
             -TargetWorkItemList ([ref]$targetWorkItemList) -ApiVersion $ApiVersion
         }
 
         # Log the completion of the migration process
-        Write-PSFMessage -Level Host -Message "Completed migration of work items from project '$sourceProjectName' in organization '$sourceOrganization' to project '$targetProjectName' in organization '$targetOrganization'."
+        Write-PSFMessage -Level Host -Message "Completed migration of work items from project '$($sourceProject.name)' in organization '$sourceOrganization' to project '$targetProjectName' in organization '$targetOrganization'."
 
     }
     end{
@@ -572,3 +572,19 @@ function Invoke-ADOProjectMigration {
         Invoke-TimeSignal -End
     }
 }
+#$typeId = "250278a7-12b6-4393-b093-1524f961ebbf"
+
+#$referenceName = "CiellosAgile.UserStory"
+#$stateId = "277237cd-0bc0-4ffb-bdc6-d358b154ba9e"
+#$targetState = Hide-ADOWorkItemTypeState -Organization $targetOrg -Token $targetOrgToken -ApiVersion "7.1" -ProcessId $typeId -WitRefName $referenceName -StateId $stateId -Hidden "true" 
+
+
+Invoke-ADOProjectMigration `
+    -SourceOrganization $sourceOrg `
+    -TargetOrganization $targetOrg `
+    -SourceProjectName $sourceProjectName `
+    -TargetProjectName $targetProjectName `
+    -SourceOrganizationToken $sourceOrgToken `
+    -TargetOrganizationToken $targetOrgToken `
+    -Verbose
+ 
