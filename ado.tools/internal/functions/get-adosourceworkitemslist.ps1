@@ -131,7 +131,7 @@ function Get-ADOSourceWorkItemsList {
             }
             else {
                 Write-PSFMessage -Level Warning -Message "No work items were retrieved from the source project '$SourceProjectName'."
-                [PSCustomObject[]]@()
+                [PSCustomObject[]]
             }
             
         } catch {
