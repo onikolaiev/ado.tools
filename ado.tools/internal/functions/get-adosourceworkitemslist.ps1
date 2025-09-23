@@ -34,6 +34,7 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
+    [OutputType([PSCustomObject])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,
@@ -92,7 +93,7 @@ function Get-ADOSourceWorkItemsList {
                 $wiResult = @()
                 # Process each batch
                 foreach ($witBatch in $witListBatches) {
-                    if($witBatch.Count -eq 0 -or $null -eq $witBatch -or $witBatch[0] -eq $null) {
+                    if($witBatch.Count -eq 0 -or $null -eq $witBatch -or $null -eq $witBatch[0]) {
                         continue
                     }
                     Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
