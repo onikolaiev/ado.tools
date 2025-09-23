@@ -177,9 +177,12 @@ function Invoke-ADOProjectMigration {
         }
         
         $body = $body | ConvertTo-Json -Depth 10
+        try {
+            Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+        }
+        catch {
+        }
         
-        $null = Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-
         Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard" 
         ## PROCESSING WORK ITEM TYPES
         Write-PSFMessage -Level Host -Message "Fetching custom work item types from source process '$($sourceProjectProcess.name)'."
@@ -283,7 +286,7 @@ function Invoke-ADOProjectMigration {
         Write-PSFMessage -Level Host -Message "Starting to process picklists."
         $sourcePicklists = (Get-ADOPickListList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion)
         $targetPicklists = (Get-ADOPickListList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion)
-        if($sourcePicklists.Count -ge 0)
+        if($sourcePicklists.Count -gt 0)
         {
             $sourcePicklists | ForEach-Object {
                 $picklist = $_
@@ -317,7 +320,7 @@ function Invoke-ADOProjectMigration {
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})  
             $sourceStates = (Get-ADOWorkItemTypeStateList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)")
             $targetStates = (Get-ADOWorkItemTypeStateList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)")
-            if($sourceStates.Count -ge 0)
+            if($sourceStates.Count -gt 0)
             { 
                 $sourceStates | ForEach-Object {
                     $state = $_
@@ -362,7 +365,7 @@ function Invoke-ADOProjectMigration {
             $targetWit = $targetWitList.Where({$_.name -eq $wit.name})    
             $sourceRules = (Get-ADOWorkItemTypeRuleList -Organization $sourceOrganization -Token $sourceOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($sourceProjectProcess.typeId)" -WitRefName "$($wit.referenceName)").Where({$_.customizationType -ne 'system'})  
             $targetRules = (Get-ADOWorkItemTypeRuleList -Organization $targetOrganization -Token $targetOrganizationtoken -ApiVersion $ApiVersion -ProcessId "$($targetProjectProcess.typeId)" -WitRefName "$($targetWit.referenceName)").Where({$_.customizationType -ne 'system'}) 
-            if($sourceRules.Count -ge 0)
+            if($sourceRules.Count -gt 0)
             { 
                 $sourceRules | ForEach-Object {
                     $rule = $_
