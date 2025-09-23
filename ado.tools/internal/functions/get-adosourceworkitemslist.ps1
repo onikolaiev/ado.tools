@@ -34,7 +34,7 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
-    [OutputType([System.Object[]])]
+    [OutputType([System.Management.Automation.PSObject])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,
