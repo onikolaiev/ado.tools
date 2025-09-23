@@ -34,7 +34,7 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
-    [OutputType([PSCustomObject])]
+    [OutputType([System.Object[]])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,
@@ -130,7 +130,7 @@ function Get-ADOSourceWorkItemsList {
             }
             else {
                 Write-PSFMessage -Level Warning -Message "No work items were retrieved from the source project '$SourceProjectName'."
-                return @()
+                return [PSCustomObject[]]@()
             }
             
         } catch {
