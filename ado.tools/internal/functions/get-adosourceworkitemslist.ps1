@@ -61,69 +61,77 @@ function Get-ADOSourceWorkItemsList {
         try {
             # Execute WIQL query to retrieve work items
             Write-PSFMessage -Level Verbose -Message "Executing WIQL query to retrieve work items from project '$SourceProjectName' in organization '$SourceOrganization'."
-            $query = "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '$SourceProjectName' AND [System.WorkItemType] NOT IN ('Test Suite', 'Test Plan','Shared Steps','Shared Parameter','Feedback Request') ORDER BY [System.ChangedDate] asc"
+            $query = "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] NOT IN ('Test Suite', 'Test Plan','Shared Steps','Shared Parameter','Feedback Request') ORDER BY [System.ChangedDate] asc"
             $result = Invoke-ADOWiqlQueryByWiql -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Query $query -ApiVersion $ApiVersion
 
             # Log the number of work items retrieved
             Write-PSFMessage -Level Verbose -Message "Retrieved $($result.workItems.Count) work items from the WIQL query."
+            if($result.workItems.Count -gt 0)
+            {
+                # Split the work item IDs into batches of 200
+                Write-PSFMessage -Level Verbose -Message "Splitting work item IDs into batches of 200."
+                $witListBatches = [System.Collections.ArrayList]::new()
+                $batch = @()
+                $result.workItems.id | ForEach-Object -Process {
+                    $batch += $_
+                    if ($batch.Count -eq 200) {
+                        Write-PSFMessage -Level Verbose -Message "Adding a batch of 200 work item IDs."
+                        $null = $witListBatches.Add($batch)
+                        $batch = @()
+                    }
+                } -End {
+                    if ($batch.Count -gt 0) {
+                        Write-PSFMessage -Level Verbose -Message "Adding the final batch of $($batch.Count) work item IDs."
+                        $null = $witListBatches.Add($batch)
+                    }
+                }
 
-            # Split the work item IDs into batches of 200
-            Write-PSFMessage -Level Verbose -Message "Splitting work item IDs into batches of 200."
-            $witListBatches = [System.Collections.ArrayList]::new()
-            $batch = @()
-            $result.workItems.id | ForEach-Object -Process {
-                $batch += $_
-                if ($batch.Count -eq 200) {
-                    Write-PSFMessage -Level Verbose -Message "Adding a batch of 200 work item IDs."
-                    $null = $witListBatches.Add($batch)
-                    $batch = @()
+                # Log the number of batches created
+                Write-PSFMessage -Level Verbose -Message "Created $($witListBatches.Count) batches of work item IDs."
+
+                $wiResult = @()
+                # Process each batch
+                foreach ($witBatch in $witListBatches) {
+                    if($witBatch.Count -eq 0 -or $null -eq $witBatch -or $witBatch[0] -eq $null) {
+                        continue
+                    }
+                    Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
+                    $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
                 }
-            } -End {
-                if ($batch.Count -gt 0) {
-                    Write-PSFMessage -Level Verbose -Message "Adding the final batch of $($batch.Count) work item IDs."
-                    $null = $witListBatches.Add($batch)
+
+
+                # Log the number of work items retrieved in detail
+                Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
+
+                # Format work items into a list
+                $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
+                    [PSCustomObject]@{
+                        "System.Id"                 = $_."System.Id"
+                        "System.WorkItemType"       = $_."System.WorkItemType"
+                        "System.Description"        = $_."System.Description"
+                        "System.State"              = $_."System.State"
+                        "System.Title"              = $_."System.Title"
+                        "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
+                        "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
+                                                        $_."System.Parent"
+                                                    } else {
+                                                        0
+                                                    }
+                    }
                 }
+
+                # Log the work items retrieved
+                Write-PSFMessage -Level Verbose -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
+                #$sourceWorkItemsList | Format-Table -AutoSize
+
+                # Return the formatted work items list
+                return $sourceWorkItemsList
             }
-
-            # Log the number of batches created
-            Write-PSFMessage -Level Verbose -Message "Created $($witListBatches.Count) batches of work item IDs."
-
-            $wiResult = @()
-            # Process each batch
-            foreach ($witBatch in $witListBatches) {
-                if($witBatch.Count -eq 0) {
-                    continue
-                }
-                Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
-                $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
+            else {
+                Write-PSFMessage -Level Warning -Message "No work items were retrieved from the source project '$SourceProjectName'."
+                return @()
             }
-
-            # Log the number of work items retrieved in detail
-            Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
-
-            # Format work items into a list
-            $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
-                [PSCustomObject]@{
-                    "System.Id"                 = $_."System.Id"
-                    "System.WorkItemType"       = $_."System.WorkItemType"
-                    "System.Description"        = $_."System.Description"
-                    "System.State"              = $_."System.State"
-                    "System.Title"              = $_."System.Title"
-                    "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
-                    "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
-                                                    $_."System.Parent"
-                                                } else {
-                                                    0
-                                                }
-                }
-            }
-
-            # Log the work items retrieved
-            Write-PSFMessage -Level Verbose -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
-            #$sourceWorkItemsList | Format-Table -AutoSize
-
-            # Return the formatted work items list
-            return $sourceWorkItemsList
+            
         } catch {
             # Log the error
             Write-PSFMessage -Level Error -Message "An error occurred: $($_.Exception.Message)"
