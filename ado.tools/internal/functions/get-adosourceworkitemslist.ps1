@@ -34,7 +34,8 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
-    [OutputType([System.Management.Automation.PSObject])]
+    # OutputType: emit zero or more PSCustomObject items representing work items
+    [OutputType([pscustomobject])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,
@@ -125,12 +126,12 @@ function Get-ADOSourceWorkItemsList {
                 Write-PSFMessage -Level Verbose -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
                 #$sourceWorkItemsList | Format-Table -AutoSize
 
-                # Return the formatted work items list
-                return $sourceWorkItemsList
+                # Emit the formatted work items list (enumerated)
+                $sourceWorkItemsList
             }
             else {
                 Write-PSFMessage -Level Warning -Message "No work items were retrieved from the source project '$SourceProjectName'."
-                return [PSCustomObject[]]@()
+                [PSCustomObject[]]@()
             }
             
         } catch {
