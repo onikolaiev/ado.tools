@@ -34,8 +34,7 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
-    # OutputType: emit zero or more PSCustomObject items representing work items
-    [OutputType([pscustomobject])]
+    [OutputType([pscustomobject[]])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,
