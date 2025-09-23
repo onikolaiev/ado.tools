@@ -177,11 +177,7 @@ function Invoke-ADOProjectMigration {
         }
         
         $body = $body | ConvertTo-Json -Depth 10
-        try {
-            Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-        }
-        catch {
-        }
+        Add-ADOWitField -Organization $targetOrganization -Token $targetOrganizationtoken -Body $body -ApiVersion $ApiVersion -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
         
         Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard" 
         ## PROCESSING WORK ITEM TYPES
