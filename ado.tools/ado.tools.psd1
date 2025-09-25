@@ -121,6 +121,11 @@ PrivateData = @{
 
     } # End of PSData hashtable
 
+    Rules = @{
+        PSUseSingularNouns = @{
+            Severity = 'None'
+        }
+    }
  } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
