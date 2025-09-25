@@ -62,7 +62,9 @@ function Get-ADOSourceWorkItemsList {
         try {
             # Execute WIQL query to retrieve work items
             Write-PSFMessage -Level Verbose -Message "Executing WIQL query to retrieve work items from project '$SourceProjectName' in organization '$SourceOrganization'."
-            $query = "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] NOT IN ('Test Suite', 'Test Plan','Shared Steps','Shared Parameter','Feedback Request') ORDER BY [System.ChangedDate] asc"
+            # Scope explicitly to the specified project to avoid cross-project items in collection-level queries
+            $escapedProject = $SourceProjectName.Replace("'", "''")
+            $query = "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '$escapedProject' AND [System.WorkItemType] NOT IN ('Test Suite', 'Test Plan','Shared Steps','Shared Parameter','Feedback Request') ORDER BY [System.ChangedDate] asc"
             $result = Invoke-ADOWiqlQueryByWiql -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Query $query -ApiVersion $ApiVersion
 
             # Log the number of work items retrieved
@@ -99,37 +101,39 @@ function Get-ADOSourceWorkItemsList {
                     Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
                     $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
                 }
-
-
-                # Log the number of work items retrieved in detail
-                Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
-
-                # Format work items into a list
-                $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
-                    [PSCustomObject]@{
-                        "System.Id"                 = $_."System.Id"
-                        "System.WorkItemType"       = $_."System.WorkItemType"
-                        "System.Description"        = $_."System.Description"
-                        "System.State"              = $_."System.State"
-                        "System.Title"              = $_."System.Title"
-                        "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
-                        "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
-                                                        $_."System.Parent"
-                                                    } else {
-                                                        0
-                                                    }
-                    }
+                if($wiResult.Count -eq 0) {
+                   [PSCustomObject[]] 
                 }
+                else {
+                    # Log the number of work items retrieved in detail
+                    Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
 
-                # Log the work items retrieved
-                Write-PSFMessage -Level Verbose -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
-                #$sourceWorkItemsList | Format-Table -AutoSize
+                    # Format work items into a list
+                    $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
+                        [PSCustomObject]@{
+                            "System.Id"                 = $_."System.Id"
+                            "System.WorkItemType"       = $_."System.WorkItemType"
+                            "System.Description"        = $_."System.Description"
+                            "System.State"              = $_."System.State"
+                            "System.Title"              = $_."System.Title"
+                            "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
+                            "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
+                                                            $_."System.Parent"
+                                                        } else {
+                                                            0
+                                                        }
+                        }
+                    }
 
-                # Emit the formatted work items list (enumerated)
-                $sourceWorkItemsList
+                    # Log the work items retrieved
+                    Write-PSFMessage -Level Verbose -Message "Formatted work items into a list. Total items: $($sourceWorkItemsList.Count)."
+                    #$sourceWorkItemsList | Format-Table -AutoSize
+
+                    # Emit the formatted work items list (enumerated)
+                    $sourceWorkItemsList
+                }                
             }
             else {
-                Write-PSFMessage -Level Warning -Message "No work items were retrieved from the source project '$SourceProjectName'."
                 [PSCustomObject[]]
             }
             
