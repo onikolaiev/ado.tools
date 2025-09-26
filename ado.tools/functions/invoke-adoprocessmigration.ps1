@@ -21,8 +21,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_Process {
-
+function Invoke-ADOProcessMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
@@ -31,7 +30,6 @@ function Invoke-ADOProjectMigration_Process {
         [Parameter(Mandatory)][pscustomobject]$SourceProject,
         [Parameter(Mandatory)][string]$ApiVersion
     )
-
     Write-PSFMessage -Level Host -Message "Resolving source process for project '$($SourceProject.name)'."
     $sourceProcess = Get-ADOProcess -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessTypeId "$($SourceProject.capabilities.processTemplate.templateTypeId)"
     $sourceParentProcess = Get-ADOProcess -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessTypeId "$($sourceProcess.parentProcessTypeId)"

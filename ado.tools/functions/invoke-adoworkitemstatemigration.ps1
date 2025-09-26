@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Migrates states for each inherited WIT.
+    .SYNOPSIS
+        Migrates states for each inherited WIT.
     .DESCRIPTION
         Migrates states assigned to each inherited WIT in process.
         This includes copying states from the source WITs to the target WITs, ensuring that all customizations are preserved.
@@ -28,7 +29,7 @@
         Author: Oleksandr Nikolaiev (@onikolaiev)
         
 #>
-function Invoke-ADOProjectMigration_States {
+function Invoke-ADOWorkItemStateMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
@@ -68,30 +69,25 @@ function Invoke-ADOProjectMigration_States {
             }
         }
         $targetStates = Get-ADOWorkItemTypeStateList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName
-        
-        # Build auto map for this work item type (source name -> best target visible state)
         $mapKeyPrefix = $wit.name + '|'
         $visibleTarget = $targetStates | Where-Object { -not $_.hidden }
         foreach ($s in $sourceStates) {
             $candidate = $null
-            # If exact name exists & not hidden -> use it
             $exact = $visibleTarget | Where-Object { $_.name -eq $s.name }
             if ($exact) { $candidate = $exact | Select-Object -First 1 }
             else {
-                # Match by category
                 if ($s.stateCategory) {
                     $catMatches = $visibleTarget | Where-Object { $_.stateCategory -eq $s.stateCategory }
                     if ($catMatches) { $candidate = ($catMatches | Sort-Object order | Select-Object -First 1) }
                 }
-                # Fallback: first visible by order
                 if (-not $candidate -and $visibleTarget) { $candidate = ($visibleTarget | Sort-Object order | Select-Object -First 1) }
             }
             if ($candidate) {
                 $script:ADOStateAutoMap[$mapKeyPrefix + $s.name] = $candidate.name
             }
         }
-    $stateMapDisplay = ($sourceStates | ForEach-Object { $_.name }) | ForEach-Object { $_ + '->' + ($script:ADOStateAutoMap[$mapKeyPrefix + $_]) }
-    $stateMapJoined  = $stateMapDisplay -join '; '
-    Write-PSFMessage -Level Verbose -Message ("State mapping for '{0}': {1}" -f $wit.name, $stateMapJoined)
+        $stateMapDisplay = ($sourceStates | ForEach-Object { $_.name }) | ForEach-Object { $_ + '->' + ($script:ADOStateAutoMap[$mapKeyPrefix + $_]) }
+        $stateMapJoined  = $stateMapDisplay -join '; '
+        Write-PSFMessage -Level Verbose -Message ("State mapping for '{0}': {1}" -f $wit.name, $stateMapJoined)
     }
 }

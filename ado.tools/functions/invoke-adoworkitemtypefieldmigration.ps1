@@ -30,8 +30,7 @@
         Author: Oleksandr Nikolaiev (@onikolaiev)
         
 #>
-function Invoke-ADOProjectMigration_WorkItemTypeFields {
-
+function Invoke-ADOWorkItemTypeFieldMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
@@ -43,7 +42,6 @@ function Invoke-ADOProjectMigration_WorkItemTypeFields {
         [Parameter(Mandatory)][System.Collections.IEnumerable]$TargetWitList,
         [Parameter(Mandatory)][string]$ApiVersion
     )
-
     Convert-FSCPSTextToAscii -Text "Migrate fields.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Starting to process custom fields for work item types."
     foreach ($wit in $SourceWitList) {

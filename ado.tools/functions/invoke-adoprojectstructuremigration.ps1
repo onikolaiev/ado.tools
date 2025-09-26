@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Ensures target project exists (create/update).
+    .SYNOPSIS
+        Ensures target project exists (create/update).
     .DESCRIPTION
         Checks if the target project exists in the target organization. If not, it creates it using the source project's settings and the target process. If it exists, it updates the project to match the source project's description and process.
     .OUTPUTS
@@ -24,7 +25,7 @@
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
 #>
-function Invoke-ADOProjectMigration_Project {
+function Invoke-ADOProjectStructureMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,

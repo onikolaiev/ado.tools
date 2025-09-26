@@ -20,7 +20,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_CustomFields {
+function Invoke-ADOCustomFieldMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
@@ -29,7 +29,6 @@ function Invoke-ADOProjectMigration_CustomFields {
         [Parameter(Mandatory)][string]$TargetProcessName,
         [Parameter(Mandatory)][string]$ApiVersion
     )
-
     Convert-FSCPSTextToAscii -Text "Migrate wit fields.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Fetching custom work item fields from source organization '$SourceOrganization'."
     $sourceFields = (Get-ADOWitFieldList -Organization $SourceOrganization -Token $SourceToken -Expand 'extensionFields' -ApiVersion $ApiVersion).Where({$_.referenceName.StartsWith('Custom.')})

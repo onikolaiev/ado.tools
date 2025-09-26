@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Migrates rules for inherited WITs.
+    .SYNOPSIS
+        Migrates rules for inherited WITs.
     .DESCRIPTION
         Migrates rules assigned to each inherited WIT in process.
         This includes copying rules from the source WITs to the target WITs, ensuring that all customizations are preserved.
@@ -26,7 +27,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_Rules {
+function Invoke-ADOWorkItemRuleMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,

@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Migrates picklists.
+    .SYNOPSIS
+        Migrates picklists.
     .DESCRIPTION
         This function migrates picklists from a source Azure DevOps organization to a target Azure DevOps organization.
         It copies all picklist items from the source to the target, preserving their properties.
@@ -20,7 +21,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_Picklists {
+function Invoke-ADOPickListMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,

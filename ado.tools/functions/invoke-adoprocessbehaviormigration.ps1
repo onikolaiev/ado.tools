@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Migrates behaviors between processes.
+    .SYNOPSIS
+        Migrates behaviors between processes.
     .DESCRIPTION
         This function migrates behaviors from a source process to a target process within Azure DevOps.
     .PARAMETER SourceOrganization
@@ -21,7 +22,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_Behaviors {
+function Invoke-ADOProcessBehaviorMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,

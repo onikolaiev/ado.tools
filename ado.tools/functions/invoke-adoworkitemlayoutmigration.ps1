@@ -1,6 +1,7 @@
 
 <#
-    .SYNOPSIS Migrates layouts (pages, sections, groups, controls).
+    .SYNOPSIS
+        Migrates layouts (pages, sections, groups, controls).
     .DESCRIPTION
         This function migrates work item type layouts from a source process to a target process within Azure DevOps.
     .PARAMETER SourceOrganization
@@ -25,7 +26,7 @@
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
-function Invoke-ADOProjectMigration_Layouts {
+function Invoke-ADOWorkItemLayoutMigration {
     [CmdletBinding()] param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
@@ -58,7 +59,6 @@ function Invoke-ADOProjectMigration_Layouts {
                 $null = Update-ADOWorkItemTypePage -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName -Body $body
             }
             $tgtPage = Get-ADOWorkItemTypeLayout -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName | Select-Object -ExpandProperty pages | Where-Object label -eq $page.label
-            # Sections
             foreach ($section in ($page.sections | Where-Object groups -ne $null)) {
                 $tgtSection = $tgtPage.sections.Where({$_.id -eq $section.id})
                 if (-not $tgtSection) {
@@ -66,7 +66,6 @@ function Invoke-ADOProjectMigration_Layouts {
                     Write-PSFMessage -Level Verbose -Message "Adding section '$($section.label)' on page '$($page.label)'."
                     $tgtSection = Add-ADOWorkItemTypeSection -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName -PageId $tgtPage.id -Body $body
                 }
-                # Groups
                 foreach ($group in $section.groups) {
                     $tgtGroup = $tgtSection.groups.Where({$_.label -eq $group.label})
                     if (-not $tgtGroup) {
@@ -74,7 +73,6 @@ function Invoke-ADOProjectMigration_Layouts {
                         Write-PSFMessage -Level Verbose -Message "Adding group '$($group.label)' in section '$($section.label)'."
                         $tgtGroup = Add-ADOWorkItemTypeGroup -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName -PageId $tgtPage.id -SectionId $section.id -Body $body
                     }
-                    # Controls
                     foreach ($control in $group.controls) {
                         $tgtControl = $tgtGroup.controls.Where({$_.id -eq $control.id})
                         if (-not $tgtControl) {
