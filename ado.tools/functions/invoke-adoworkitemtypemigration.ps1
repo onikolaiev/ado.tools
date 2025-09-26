@@ -37,7 +37,9 @@
         
 #>
 function Invoke-ADOWorkItemTypeMigration {
-    [CmdletBinding()] param(
+    [CmdletBinding()] 
+    [OutputType([System.Collections.Hashtable])]
+    param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
         [Parameter(Mandatory)][string]$SourceToken,
@@ -46,7 +48,7 @@ function Invoke-ADOWorkItemTypeMigration {
         [Parameter(Mandatory)][pscustomobject]$TargetProcess,
         [Parameter(Mandatory)][string]$ApiVersion
     )
-        [OutputType([hashtable])]
+    
     Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Fetching custom work item types from source process '$($SourceProcess.name)'."
     $sourceWits = (Get-ADOWorkItemTypeList -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessId $SourceProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited'})

@@ -40,7 +40,9 @@
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
 function Invoke-ADOProcessMigration {
-    [CmdletBinding()] param(
+    [CmdletBinding()] 
+    [OutputType([System.Collections.Hashtable])]
+    param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
         [Parameter(Mandatory)][string]$SourceToken,
@@ -48,7 +50,6 @@ function Invoke-ADOProcessMigration {
         [Parameter(Mandatory)][pscustomobject]$SourceProject,
         [Parameter(Mandatory)][string]$ApiVersion
     )
-        [OutputType([hashtable])]
     Write-PSFMessage -Level Host -Message "Resolving source process for project '$($SourceProject.name)'."
     $sourceProcess = Get-ADOProcess -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessTypeId "$($SourceProject.capabilities.processTemplate.templateTypeId)"
     $sourceParentProcess = Get-ADOProcess -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessTypeId "$($sourceProcess.parentProcessTypeId)"
