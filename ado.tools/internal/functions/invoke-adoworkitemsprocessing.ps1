@@ -84,6 +84,9 @@ function Invoke-ADOWorkItemsProcessing {
         if (-not $script:ADOValidWorkItemStatesCache) {
             $script:ADOValidWorkItemStatesCache = @{}
         }
+        if (-not $script:ADOWorkItemProcessingAttempts) {
+            $script:ADOWorkItemProcessingAttempts = @{}
+        }
     
     }
 
@@ -95,8 +98,12 @@ function Invoke-ADOWorkItemsProcessing {
                 @{ op = 'add'; path = '/fields/System.Title';        value = "$($SourceWorkItem.'System.Title')" }
                 @{ op = 'add'; path = '/fields/System.Description';  value = "$($SourceWorkItem.'System.Description')" }
                 @{ op = 'add'; path = '/fields/Custom.SourceWorkitemId'; value = "$($SourceWorkItem.'System.Id')" }
-                @{ op = 'add'; path = '/fields/System.State';        value = $stateValue }
             )
+            if ($stateValue) {
+                $ops += @{ op = 'add'; path = '/fields/System.State'; value = $stateValue }
+            } else {
+                Write-PSFMessage -Level Verbose -Message "Omitting explicit System.State to let server assign default."
+            }
 
             # Remove empty Description to avoid some rule validation noise
             $ops = $ops | Where-Object {
@@ -109,13 +116,18 @@ function Invoke-ADOWorkItemsProcessing {
             if ($SourceWorkItem.'System.Parent') {
                 if (-not $TargetWorkItemList.Value[$SourceWorkItem.'System.Parent']) {
                     Write-PSFMessage -Level Verbose -Message "Parent work item ID $($SourceWorkItem.'System.Parent') not found in target map. Creating parent first."
-                    $allSourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken
-                    $parentItem = $allSourceItems | Where-Object { $_.'System.Id' -eq $SourceWorkItem.'System.Parent' }
-                    if ($parentItem) {
-                        Invoke-ADOWorkItemsProcessing -SourceWorkItem $parentItem `
-                            -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken `
-                            -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken `
-                            -TargetWorkItemList $TargetWorkItemList -ApiVersion $ApiVersion
+                    if (-not $script:ADOWorkItemProcessingAttempts.ContainsKey($SourceWorkItem.'System.Parent')) {
+                        $allSourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken
+                        $parentItem = $allSourceItems | Where-Object { $_.'System.Id' -eq $SourceWorkItem.'System.Parent' }
+                        if ($parentItem) {
+                            $script:ADOWorkItemProcessingAttempts[$SourceWorkItem.'System.Parent'] = 1
+                            Invoke-ADOWorkItemsProcessing -SourceWorkItem $parentItem `
+                                -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken `
+                                -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken `
+                                -TargetWorkItemList $TargetWorkItemList -ApiVersion $ApiVersion
+                        }
+                    } else {
+                        Write-PSFMessage -Level Verbose -Message "Skipping recursive attempt to create parent ID $($SourceWorkItem.'System.Parent') again."                    
                     }
                 }
 
@@ -135,99 +147,78 @@ function Invoke-ADOWorkItemsProcessing {
             $ops | ConvertTo-Json -Depth 10
         }
 
-        # Helper: retrieve valid states for a given type (cached)
-        $getValidStates = {
-            param($projectName, $witType)
-            $cacheKey = ($projectName.ToLowerInvariant() + '|' + $witType)
-            if ($script:ADOValidWorkItemStatesCache.ContainsKey($cacheKey)) {
-                return $script:ADOValidWorkItemStatesCache[$cacheKey]
-            }
-            try {
-                $escapedType = [uri]::EscapeDataString($witType)
-                $uri = "/$projectName/_apis/wit/workitemtypes/$escapedType"
-                $resp = Invoke-ADOApiRequest -Organization $TargetOrganization -Token $TargetToken -ApiUri $uri -Method GET -ApiVersion $ApiVersion -ErrorAction Stop
-                $states = if ($resp.states) { $resp.states } elseif ($resp.value) { $resp.value } else { @() }
-                $script:ADOValidWorkItemStatesCache[$cacheKey] = $states
-                return $states
-            }
-            catch {
-                Write-PSFMessage -Level Warning -Message "Unable to retrieve valid states for type '$witType': $($_.Exception.Message)"
-                return @()
-            }
-        }
-
-        # Prepare attempt queue: first the original state
+        # Phase 1: Always create WITHOUT explicit state. Let server assign default.
         $originalState = $SourceWorkItem.'System.State'
-        $attemptQueue  = New-Object System.Collections.Generic.List[string]
-        $attemptQueue.Add($originalState)
-
-        $created   = $false
-        $lastError = $null
-
-        while (-not $created -and $attemptQueue.Count -gt 0) {
-            $candidateState = $attemptQueue[0]
-            $attemptQueue.RemoveAt(0)
-
-            try {
-                $body = & $buildPatchBody $candidateState
-                Write-PSFMessage -Level Verbose -Message "Creating work item (state='$candidateState') for source ID $($SourceWorkItem.'System.Id')."
-
-                $targetWorkItem = Add-ADOWorkItem -Organization $TargetOrganization `
-                                                -Token $TargetToken `
-                                                -Project $TargetProjectName `
-                                                -Type "`$$($SourceWorkItem.'System.WorkItemType')" `
-                                                -Body $body `
-                                                -ApiVersion $ApiVersion `
-                                                -ErrorAction Stop
-
-                if (-not $targetWorkItem.url) {
-                    Write-PSFMessage -Level Error -Message "Creation returned empty URL for source ID $($SourceWorkItem.'System.Id')."
-                } else {
-                    $TargetWorkItemList.Value[$SourceWorkItem.'System.Id'] = $targetWorkItem.url
-                }
-                $created = $true
-            }
-            catch {
-                $lastError = $_
-                $msg = $_.Exception.Message
-
-                # Detect unsupported state errors
-                if ($msg -match 'not in the list of supported values' -or $msg -match 'RuleValidationException') {
-                    Write-PSFMessage -Level Warning -Message "State '$candidateState' is not supported for '$($SourceWorkItem.'System.WorkItemType')' in target. Attempting fallback."
-
-                    $validStates = & $getValidStates $TargetProjectName $SourceWorkItem.'System.WorkItemType'
-                    if ($validStates.Count -gt 0) {
-                        # Try category-based mapping first (match same stateCategory as original if possible)
-                        $origCategory = ($validStates | Where-Object { $_.name -eq $originalState }).stateCategory
-                        $fallback = $null
-
-                        if ($origCategory) {
-                            $fallback = ($validStates | Where-Object stateCategory -eq $origCategory | Sort-Object order | Select-Object -First 1)
-                        }
-                        if (-not $fallback) {
-                            # Default to the first by 'order'
-                            $fallback = ($validStates | Sort-Object order | Select-Object -First 1)
-                        }
-
-                        if ($fallback -and $fallback.name -ne $candidateState -and $attemptQueue -notcontains $fallback.name) {
-                            Write-PSFMessage -Level Verbose -Message "Selected fallback state '$($fallback.name)' (category=$($fallback.stateCategory))."
-                            $attemptQueue.Add($fallback.name)
-                        } else {
-                            Write-PSFMessage -Level Warning -Message "Unable to determine fallback state."
-                        }
-                    } else {
-                        Write-PSFMessage -Level Warning -Message "No available states retrieved for fallback."
-                    }
-                }
-                else {
-                    Write-PSFMessage -Level Error -Message "Non-state error while creating work item $($SourceWorkItem.'System.Id'): $msg"
-                    break
+        $witType = $SourceWorkItem.'System.WorkItemType'
+        $autoMappedState = $null
+        if ($script:ADOStateAutoMap) {
+            $mappingKey = $witType + '|' + $originalState
+            if ($script:ADOStateAutoMap.ContainsKey($mappingKey)) {
+                $autoMappedState = $script:ADOStateAutoMap[$mappingKey]
+                if ($autoMappedState -and $autoMappedState -ne $originalState) {
+                    Write-PSFMessage -Level Verbose -Message "Auto-mapped original state '$originalState' -> '$autoMappedState' for type '$witType'."
                 }
             }
         }
+        # Manual override support (administrator can define preferred initial state per WIT)
+        #if ($script:ADOStateOverride -and $script:ADOStateOverride.ContainsKey($witType)) {
+        #    Write-PSFMessage -Level Verbose -Message "Override state mapping for type '$witType' -> '$($script:ADOStateOverride[$witType])'."
+        #    $autoMappedState = $script:ADOStateOverride[$witType]
+        #}
 
-        if (-not $created) {
-            Write-PSFMessage -Level Error -Message "Failed to create target work item for source ID $($SourceWorkItem.'System.Id'). Last error: $($lastError)"
+        $creationBody = & $buildPatchBody $null
+        Write-PSFMessage -Level Verbose -Message "Phase 1: Creating work item without explicit state for source ID $($SourceWorkItem.'System.Id')."
+        $createdItem = $null
+        try {
+            $createdItem = Add-ADOWorkItem -Organization $TargetOrganization `
+                                           -Token $TargetToken `
+                                           -Project $TargetProjectName `
+                                           -Type "`$$($SourceWorkItem.'System.WorkItemType')" `
+                                           -Body $creationBody `
+                                           -ApiVersion $ApiVersion `
+                                           -ErrorAction Stop
+        }
+        catch {
+            Write-PSFMessage -Level Error -Message "Initial creation (without state) failed for source ID $($SourceWorkItem.'System.Id'): $($_.Exception.Message)"
+        }
+
+        if ($createdItem -and $createdItem.url) {
+            $TargetWorkItemList.Value[$SourceWorkItem.'System.Id'] = $createdItem.url
+            Write-PSFMessage -Level Verbose -Message "Created target work item (initial) SourceID=$($SourceWorkItem.'System.Id') => $($createdItem.url)"
+
+            # Phase 2: If we have an auto/override mapped state that differs from server-assigned and is valid -> patch
+            $needPatch = $false
+            $targetAssignedState = $createdItem.fields.'System.State'
+            $desiredState = $autoMappedState
+            if ($desiredState -and $desiredState -ne $targetAssignedState) { $needPatch = $true }
+
+            if ($needPatch) {
+                Write-PSFMessage -Level Verbose -Message "Phase 2: Patching state -> '$desiredState' (current='$targetAssignedState')."
+
+                try {
+                    $patchBody = @(
+                        @{
+                            op    = "add"
+                            path  = "/fields/System.State"
+                            value = "$autoMappedState"
+                        }
+                    ) | ConvertTo-Json -Depth 2
+                    $null = Update-ADOWorkItem -Organization $TargetOrganization `
+                                                    -Token $TargetToken `
+                                                    -Project $TargetProjectName `
+                                                    -Id $createdItem.id `
+                                                    -Body [$patchBody] `
+                                                    -ApiVersion $ApiVersion `
+                                                    -ErrorAction Stop
+                    Write-PSFMessage -Level Verbose -Message "Patched work item $($createdItem.id) state -> '$desiredState'."
+                }
+                catch {
+                    Write-PSFMessage -Level Warning -Message "Failed to patch state to '$desiredState' for work item $($createdItem.id): $($_.Exception.Message)"
+                }
+            }
+        }
+        else {
+            Write-PSFMessage -Level Error -Message "Failed to create target work item for source ID $($SourceWorkItem.'System.Id') in phase 1. No further patching."
         }
     }
 

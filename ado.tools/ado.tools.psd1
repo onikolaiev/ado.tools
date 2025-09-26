@@ -12,7 +12,7 @@
 RootModule = 'ado.tools.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.43'
+ModuleVersion = '1.0.44'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -70,7 +70,20 @@ FormatsToProcess = 'xml\ado.tools.Format.ps1xml'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Invoke-ADOProjectMigration'
+FunctionsToExport = @(
+    'Invoke-ADOProjectMigration',
+    'Invoke-ADOProcessMigration',
+    'Invoke-ADOCustomFieldMigration',
+    'Invoke-ADOWorkItemTypeMigration',
+    'Invoke-ADOWorkItemTypeFieldMigration',
+    'Invoke-ADOProcessBehaviorMigration',
+    'Invoke-ADOPickListMigration',
+    'Invoke-ADOWorkItemStateMigration',
+    'Invoke-ADOWorkItemRuleMigration',
+    'Invoke-ADOWorkItemLayoutMigration',
+    'Invoke-ADOProjectStructureMigration',
+    'Invoke-ADOWorkItemDataMigration'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -121,6 +134,11 @@ PrivateData = @{
 
     } # End of PSData hashtable
 
+    Rules = @{
+        PSUseSingularNouns = @{
+            Severity = 'None'
+        }
+    }
  } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
