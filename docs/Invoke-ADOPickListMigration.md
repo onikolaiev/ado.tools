@@ -24,12 +24,22 @@ It copies all picklist items from the source to the target, preserving their pro
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
+$sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+$sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+$proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
 ```
 
-{{ Add example description here }}
+Invoke-ADOPickListMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken -TargetProcess $proc.TargetProcess -ApiVersion $apiVersion
+# Migrates picklists missing in target.
 
 ## PARAMETERS
 

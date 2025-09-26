@@ -24,12 +24,21 @@ It uses a tracking field to associate work items in the source project with thei
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
+$targetProjectName = 'MigratedProject'
 ```
 
-{{ Add example description here }}
+Invoke-ADOWorkItemDataMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken \`
+    -SourceProjectName $sourceProjectName -TargetProjectName $targetProjectName -ApiVersion $apiVersion
+# Migrates work items not yet copied (no tracking field value present in target).
 
 ## PARAMETERS
 

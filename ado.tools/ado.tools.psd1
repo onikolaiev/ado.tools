@@ -71,17 +71,17 @@ FormatsToProcess = 'xml\ado.tools.Format.ps1xml'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-    'Invoke-ADOProjectMigration'
-    'Invoke-ADOProcessMigration'
-    'Invoke-ADOCustomFieldMigration'
-    'Invoke-ADOWorkItemTypeMigration'
-    'Invoke-ADOWorkItemTypeFieldMigration'
-    'Invoke-ADOProcessBehaviorMigration'
-    'Invoke-ADOPickListMigration'
-    'Invoke-ADOWorkItemStateMigration'
-    'Invoke-ADOWorkItemRuleMigration'
-    'Invoke-ADOWorkItemLayoutMigration'
-    'Invoke-ADOProjectStructureMigration'
+    'Invoke-ADOProjectMigration',
+    'Invoke-ADOProcessMigration',
+    'Invoke-ADOCustomFieldMigration',
+    'Invoke-ADOWorkItemTypeMigration',
+    'Invoke-ADOWorkItemTypeFieldMigration',
+    'Invoke-ADOProcessBehaviorMigration',
+    'Invoke-ADOPickListMigration',
+    'Invoke-ADOWorkItemStateMigration',
+    'Invoke-ADOWorkItemRuleMigration',
+    'Invoke-ADOWorkItemLayoutMigration',
+    'Invoke-ADOProjectStructureMigration',
     'Invoke-ADOWorkItemDataMigration'
 )
 

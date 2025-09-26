@@ -23,6 +23,22 @@
     .PARAMETER SourceVersionControlCapabilities
         The source version control capabilities object containing details about the version control settings to migrate.
     .PARAMETER ApiVersion
+    .EXAMPLE
+        $apiVersion = '7.1'
+        $sourceOrg  = 'srcOrg'
+        $targetOrg  = 'tgtOrg'
+        $sourceToken = 'pat-src'
+        $targetToken = 'pat-tgt'
+        $sourceProjectName = 'Sample'
+        $targetProjectName = 'MigratedProject'
+        $sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+        $sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+        $proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
+        
+        Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg `
+            -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -TargetProcess $proc.TargetProcess `
+            -TargetProjectName $targetProjectName -SourceVersionControlCapabilities $sourceProject.capabilities.versioncontrol -ApiVersion $apiVersion
+        # Creates or updates the target project aligned to target process.
         The version of the Azure DevOps REST API to use.
 #>
 function Invoke-ADOProjectStructureMigration {

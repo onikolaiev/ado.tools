@@ -17,6 +17,24 @@
         The source project object containing details about the project to migrate.
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
+    .EXAMPLE
+        $apiVersion = '7.1'
+        $sourceOrg  = 'srcOrg'
+        $targetOrg  = 'tgtOrg'
+        $sourceToken = 'pat-src'
+        $targetToken = 'pat-tgt'
+        $sourceProjectName = 'Sample'
+        
+        # Lookup source project (same pattern as orchestrator)
+        $sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+        $sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+        
+        $processResult = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg `
+            -SourceToken $sourceToken -TargetToken $targetToken `
+            -SourceProject $sourceProject -ApiVersion $apiVersion
+        
+        $processResult.TargetProcess | Select-Object name,typeId
+        # Ensures the inherited process exists (creates if missing) and returns Source/Target/Parent process objects.
     .NOTES
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)

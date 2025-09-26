@@ -27,6 +27,19 @@
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
         
+    .EXAMPLE
+        $apiVersion = '7.1'
+        $sourceOrg  = 'srcOrg'
+        $targetOrg  = 'tgtOrg'
+        $sourceToken = 'pat-src'
+        $targetToken = 'pat-tgt'
+        $sourceProjectName = 'Sample'
+        $targetProjectName = 'MigratedProject'
+        
+        Invoke-ADOWorkItemDataMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg `
+            -SourceToken $sourceToken -TargetToken $targetToken `
+            -SourceProjectName $sourceProjectName -TargetProjectName $targetProjectName -ApiVersion $apiVersion
+        # Migrates work items not yet copied (no tracking field value present in target).
     .NOTES
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)

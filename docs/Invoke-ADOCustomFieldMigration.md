@@ -23,12 +23,25 @@ This function migrates custom work item fields (those starting with 'Custom.') f
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
 ```
 
-{{ Add example description here }}
+# Obtain source project & process to derive target process name
+$sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+$sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+$proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
+$targetProcessName = $proc.TargetProcess.name
+
+Invoke-ADOCustomFieldMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken -TargetProcessName $targetProcessName -ApiVersion $apiVersion
+# Copies all Custom.* fields and ensures tracking field Custom.SourceWorkitemId exists.
 
 ## PARAMETERS
 

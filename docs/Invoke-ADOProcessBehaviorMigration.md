@@ -23,12 +23,22 @@ This function migrates behaviors from a source process to a target process withi
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
+$sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+$sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+$proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
 ```
 
-{{ Add example description here }}
+Invoke-ADOProcessBehaviorMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken -SourceProcess $proc.SourceProcess -TargetProcess $proc.TargetProcess -ApiVersion $apiVersion
+# Migrates custom (non-system) behaviors.
 
 ## PARAMETERS
 

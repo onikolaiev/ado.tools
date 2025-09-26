@@ -26,12 +26,25 @@ If it exists, it updates the project to match the source project's description a
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
+$targetProjectName = 'MigratedProject'
+$sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+$sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+$proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
 ```
 
-{{ Add example description here }}
+Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -TargetProcess $proc.TargetProcess \`
+    -TargetProjectName $targetProjectName -SourceVersionControlCapabilities $sourceProject.capabilities.versioncontrol -ApiVersion $apiVersion
+# Creates or updates the target project aligned to target process.
+The version of the Azure DevOps REST API to use.
 
 ## PARAMETERS
 
@@ -156,7 +169,7 @@ Accept wildcard characters: False
 ```
 
 ### -ApiVersion
-The version of the Azure DevOps REST API to use.
+{{ Fill ApiVersion Description }}
 
 ```yaml
 Type: String

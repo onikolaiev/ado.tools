@@ -16,6 +16,23 @@
         The name of the target process in the target organization.
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
+    .EXAMPLE
+        $apiVersion = '7.1'
+        $sourceOrg  = 'srcOrg'
+        $targetOrg  = 'tgtOrg'
+        $sourceToken = 'pat-src'
+        $targetToken = 'pat-tgt'
+        $sourceProjectName = 'Sample'
+        
+        # Obtain source project & process to derive target process name
+        $sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+        $sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+        $proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
+        $targetProcessName = $proc.TargetProcess.name
+        
+        Invoke-ADOCustomFieldMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg `
+            -SourceToken $sourceToken -TargetToken $targetToken -TargetProcessName $targetProcessName -ApiVersion $apiVersion
+        # Copies all Custom.* fields and ensures tracking field Custom.SourceWorkitemId exists.
     .NOTES
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)

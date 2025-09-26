@@ -18,6 +18,20 @@
         The target process object containing details about the process to migrate to.
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
+    .EXAMPLE
+        $apiVersion = '7.1'
+        $sourceOrg  = 'srcOrg'
+        $targetOrg  = 'tgtOrg'
+        $sourceToken = 'pat-src'
+        $targetToken = 'pat-tgt'
+        $sourceProjectName = 'Sample'
+        $sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+        $sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+        $proc = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -ApiVersion $apiVersion
+        
+        Invoke-ADOProcessBehaviorMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg `
+            -SourceToken $sourceToken -TargetToken $targetToken -SourceProcess $proc.SourceProcess -TargetProcess $proc.TargetProcess -ApiVersion $apiVersion
+        # Migrates custom (non-system) behaviors.
     .NOTES
         This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
         Author: Oleksandr Nikolaiev (@onikolaiev)

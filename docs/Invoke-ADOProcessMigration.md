@@ -24,12 +24,26 @@ Returns a hashtable with keys SourceProcess, TargetProcess, SourceParentProcess.
 
 ## EXAMPLES
 
-### Example 1
-```powershell
-PS C:\> {{ Add example code here }}
+### EXAMPLE 1
+```
+$apiVersion = '7.1'
+$sourceOrg  = 'srcOrg'
+$targetOrg  = 'tgtOrg'
+$sourceToken = 'pat-src'
+$targetToken = 'pat-tgt'
+$sourceProjectName = 'Sample'
 ```
 
-{{ Add example description here }}
+# Lookup source project (same pattern as orchestrator)
+$sourceProjectMeta = (Get-ADOProjectList -Organization $sourceOrg -Token $sourceToken -ApiVersion $apiVersion -StateFilter All) | Where-Object name -eq $sourceProjectName
+$sourceProject = Get-ADOProject -Organization $sourceOrg -Token $sourceToken -ProjectId $sourceProjectMeta.id -IncludeCapabilities -ApiVersion $apiVersion
+
+$processResult = Invoke-ADOProcessMigration -SourceOrganization $sourceOrg -TargetOrganization $targetOrg \`
+    -SourceToken $sourceToken -TargetToken $targetToken \`
+    -SourceProject $sourceProject -ApiVersion $apiVersion
+
+$processResult.TargetProcess | Select-Object name,typeId
+# Ensures the inherited process exists (creates if missing) and returns Source/Target/Parent process objects.
 
 ## PARAMETERS
 
