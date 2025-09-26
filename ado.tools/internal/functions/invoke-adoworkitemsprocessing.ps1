@@ -203,7 +203,7 @@ function Invoke-ADOWorkItemsProcessing {
                             value = "$autoMappedState"
                         }
                     ) | ConvertTo-Json -Depth 2
-                    $patched = Update-ADOWorkItem -Organization $TargetOrganization `
+                    $null = Update-ADOWorkItem -Organization $TargetOrganization `
                                                     -Token $TargetToken `
                                                     -Project $TargetProjectName `
                                                     -Id $createdItem.id `

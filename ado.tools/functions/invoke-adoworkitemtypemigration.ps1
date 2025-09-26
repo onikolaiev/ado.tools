@@ -2,6 +2,9 @@
 <#
     .SYNOPSIS
         Migrates inherited work item types between processes.
+    .DESCRIPTION
+        Ensures that all inherited (custom) work item types present in the source process also exist in the target process.
+        Any missing custom work item type definitions are created in the target process while existing ones are left unchanged.
     .PARAMETER SourceOrganization
         The name of the source Azure DevOps organization.
     .PARAMETER TargetOrganization
