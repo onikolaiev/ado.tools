@@ -5,6 +5,7 @@
         
     .DESCRIPTION
         This function retrieves work items from a source Azure DevOps project using a WIQL query, splits them into batches of 200, and processes them to extract detailed information.
+        Returned objects now include a Relations property (if any) so that callers can further process attachments (relation type 'AttachedFile') and other links.
         
     .PARAMETER SourceOrganization
         The name of the source Azure DevOps organization.
@@ -99,29 +100,28 @@ function Get-ADOSourceWorkItemsList {
                         continue
                     }
                     Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
-                    $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion
+                    $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion -Expand Relations
                 }
                 if($wiResult.Count -eq 0) {
-                   [PSCustomObject[]] 
-                }
-                else {
+                    return @()
+                } else {
                     # Log the number of work items retrieved in detail
                     Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
 
                     # Format work items into a list
-                    $sourceWorkItemsList = $wiResult.fields | ForEach-Object {
+                    # Merge field selection with relations by iterating original work item objects
+                    $sourceWorkItemsList = foreach ($wi in $wiResult) {
+                        $f = $wi.fields
                         [PSCustomObject]@{
-                            "System.Id"                 = $_."System.Id"
-                            "System.WorkItemType"       = $_."System.WorkItemType"
-                            "System.Description"        = $_."System.Description"
-                            "System.State"              = $_."System.State"
-                            "System.Title"              = $_."System.Title"
-                            "Custom.SourceWorkitemId"   = $_."Custom.SourceWorkitemId"
-                            "System.Parent"             = if ($_.PSObject.Properties["System.Parent"] -and $_."System.Parent") {
-                                                            $_."System.Parent"
-                                                        } else {
-                                                            0
-                                                        }
+                            "System.Id"               = $f."System.Id"
+                            "System.WorkItemType"     = $f."System.WorkItemType"
+                            "System.Description"      = $f."System.Description"
+                            "System.State"            = $f."System.State"
+                            "System.Title"            = $f."System.Title"
+                            "Custom.SourceWorkitemId" = $f."Custom.SourceWorkitemId"
+                            "System.Parent"           = if ($f.PSObject.Properties["System.Parent"] -and $f."System.Parent") { $f."System.Parent" } else { 0 }
+                            Relations                  = $wi.relations
+                            Url                        = $wi.url
                         }
                     }
 
@@ -130,11 +130,11 @@ function Get-ADOSourceWorkItemsList {
                     #$sourceWorkItemsList | Format-Table -AutoSize
 
                     # Emit the formatted work items list (enumerated)
-                    $sourceWorkItemsList
+                    return $sourceWorkItemsList
                 }                
             }
             else {
-                [PSCustomObject[]]
+                return @()
             }
             
         } catch {

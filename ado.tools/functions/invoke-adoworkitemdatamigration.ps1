@@ -57,11 +57,27 @@ function Invoke-ADOWorkItemDataMigration {
     Convert-FSCPSTextToAscii -Text "Migrate work items.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Starting work item migration from '$SourceProjectName' to '$TargetProjectName'."
     $sourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -ApiVersion $ApiVersion
+    Write-PSFMessage -Level Verbose -Message "Loaded $($sourceItems.Count) source work items."
+
+    # Prefetch target items ONCE to avoid O(n^2) calls; build map of already migrated Source IDs
     $targetMap = @{}
+    $existingTargetItems = Get-ADOSourceWorkItemsList -SourceOrganization $TargetOrganization -SourceProjectName $TargetProjectName -SourceToken $TargetToken -Fields @('System.Id','System.Title','System.Description','System.WorkItemType','System.State','System.Parent','Custom.SourceWorkitemId') -ApiVersion $ApiVersion
+    if ($existingTargetItems) {
+        foreach ($t in $existingTargetItems) {
+            $srcId = $t.'Custom.SourceWorkitemId'
+            if ($srcId -and -not $targetMap.ContainsKey($srcId)) { $targetMap[$srcId] = $t.Url }
+        }
+    }
+    $initialMapped = $targetMap.Count
+    Write-PSFMessage -Level Verbose -Message "Found $initialMapped existing mapped work items in target (tracking field present)."
+
+    $processed = 0
     foreach ($item in $sourceItems) {
-        $existing = Get-ADOSourceWorkItemsList -SourceOrganization $TargetOrganization -SourceProjectName $TargetProjectName -SourceToken $TargetToken -Fields @('System.Id','System.Title','System.Description','System.WorkItemType','System.State','System.Parent','Custom.SourceWorkitemId') | Where-Object 'Custom.SourceWorkitemId' -EQ $item.'System.Id'
-        if ($existing) { continue }
+        $processed++
+        if ($targetMap.ContainsKey($item.'System.Id')) { continue }
         Invoke-ADOWorkItemsProcessing -SourceWorkItem $item -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken -TargetWorkItemList ([ref]$targetMap) -ApiVersion $ApiVersion
     }
-    Write-PSFMessage -Level Host -Message "Completed work item migration. Migrated $($targetMap.Count) items."
+    $totalMapped = $targetMap.Count
+    $createdThisRun = $totalMapped - $initialMapped
+    Write-PSFMessage -Level Host -Message "Completed work item migration. Total mapped: $totalMapped (created this run: $createdThisRun, pre-existing: $initialMapped)."
 }
