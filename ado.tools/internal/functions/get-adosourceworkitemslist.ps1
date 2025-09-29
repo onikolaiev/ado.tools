@@ -35,7 +35,8 @@
 
 function Get-ADOSourceWorkItemsList {
     [CmdletBinding()]
-    [OutputType([pscustomobject[]])]
+    # OutputType declares the TYPE of each emitted object (not the array); analyzer flagged array form.
+    [OutputType([pscustomobject])]
     param (
         [Parameter(Mandatory = $true)]
         [string]$SourceOrganization,

@@ -108,7 +108,7 @@ function Invoke-ADOWorkItemsProcessing {
                 } catch { Write-PSFMessage -Level Error -Message "Create failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
             } else {
                 Write-PSFMessage -Level Verbose -Message "SourceID=$($SourceWorkItem.'System.Id') already mapped. Skipping creation."
-                try { $existingId = [int]($existingTargetUrl.Split('/')[-1]); $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $existingId -Expand Relations -ApiVersion $ApiVersion } catch {}
+                try { $existingId = [int]($existingTargetUrl.Split('/')[-1]); $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $existingId -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Lookup of existing target work item failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
             }
 
         if ($createdItem -and $createdItem.url) {
@@ -119,7 +119,7 @@ function Invoke-ADOWorkItemsProcessing {
                         try {
                             $patchBody = @(@{ op='add'; path='/fields/System.State'; value="$autoMappedState" }) | ConvertTo-Json -Depth 4
                             Update-ADOWorkItem -Organization $TargetOrganization -Token $TargetToken -Project $TargetProjectName -Id $createdItem.id -Body [$patchBody] -ApiVersion $ApiVersion | Out-Null
-                            try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {}
+                            try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Post-state refresh failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                         } catch { Write-PSFMessage -Level Warning -Message "State patch failed (SourceID=$($SourceWorkItem.'System.Id')): $($_.Exception.Message)" }
                     }
                 }
@@ -129,7 +129,7 @@ function Invoke-ADOWorkItemsProcessing {
                         $sourceAttachments = @($SourceWorkItem.Relations | Where-Object { $_.rel -eq 'AttachedFile' })
                         if ($sourceAttachments.Count -gt 0) {
                             if (-not (Test-Path -LiteralPath $AttachmentTempFolder)) { $null = New-Item -ItemType Directory -Force -Path $AttachmentTempFolder }
-                            if (-not $createdItem.relations) { try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {} }
+                            if (-not $createdItem.relations) { try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Initial relations fetch failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" } }
                             $existingNames = @()
                             if ($createdItem.relations) {
                                 $existingNames = @($createdItem.relations | Where-Object rel -eq 'AttachedFile' | ForEach-Object { $_.attributes.name; $_.attributes.resourceName } | Where-Object { $_ }) | Select-Object -Unique
@@ -150,7 +150,7 @@ function Invoke-ADOWorkItemsProcessing {
                                         @{ op='add'; path='/relations/-'; value=@{ rel='AttachedFile'; url=$uploaded.url; attributes=@{ comment="Migrated from source $($SourceWorkItem.'System.Id')"; name=$fileName } } }
                                     ) | ConvertTo-Json -Depth 8
                                     Update-ADOWorkItem -Organization $TargetOrganization -Token $TargetToken -Project $TargetProjectName -Id $createdItem.id -Body [$patch] -ApiVersion $ApiVersion | Out-Null
-                                    try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {}
+                                    try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Post-attachment refresh failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                                     $existingNames += $norm
                                 } catch { Write-PSFMessage -Level Warning -Message "Attachment '$fileName' failed: $($_.Exception.Message)" }
                             }
