@@ -104,7 +104,7 @@ function Get-ADOSourceWorkItemsList {
                     $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion -Expand Relations
                 }
                 if($wiResult.Count -eq 0) {
-                    return @()
+                    [pscustomobject[]]
                 } else {
                     # Log the number of work items retrieved in detail
                     Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
