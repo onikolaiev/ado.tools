@@ -159,6 +159,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
+### System.Collections.Hashtable
 ## NOTES
 This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
 Author: Oleksandr Nikolaiev (@onikolaiev)

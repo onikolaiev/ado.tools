@@ -19,7 +19,8 @@ Invoke-ADOWorkItemTypeMigration [-SourceOrganization] <String> [-TargetOrganizat
 ```
 
 ## DESCRIPTION
-{{ Fill in the Description }}
+Ensures that all inherited (custom) work item types present in the source process also exist in the target process.
+Any missing custom work item type definitions are created in the target process while existing ones are left unchanged.
 
 ## EXAMPLES
 
@@ -170,6 +171,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
+### System.Collections.Hashtable
 ## NOTES
 This function is part of the ADO Tools module and adheres to the conventions used in the module for logging, error handling, and API interaction.
 Author: Oleksandr Nikolaiev (@onikolaiev)

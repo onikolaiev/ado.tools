@@ -44,7 +44,6 @@ Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrg -TargetOrgani
     -SourceToken $sourceToken -TargetToken $targetToken -SourceProject $sourceProject -TargetProcess $proc.TargetProcess \`
     -TargetProjectName $targetProjectName -SourceVersionControlCapabilities $sourceProject.capabilities.versioncontrol -ApiVersion $apiVersion
 # Creates or updates the target project aligned to target process.
-The version of the Azure DevOps REST API to use.
 
 ## PARAMETERS
 
@@ -169,7 +168,7 @@ Accept wildcard characters: False
 ```
 
 ### -ApiVersion
-{{ Fill ApiVersion Description }}
+The version of the Azure DevOps REST API to use.
 
 ```yaml
 Type: String
