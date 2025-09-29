@@ -30,7 +30,7 @@
     .EXAMPLE
         Invoke-ADOWorkItemsProcessing -SourceWorkItem $wi -SourceOrganization src -SourceProjectName proj -SourceToken $patSrc `
             -TargetOrganization tgt -TargetProjectName proj2 -TargetToken $patTgt -TargetWorkItemList ([ref]$map)
-        
+
         Processes a single work item, creating it in the target if not already mapped, migrating attachments if enabled.
     .NOTES
         Author: Oleksandr Nikolaiev (@onikolaiev)
@@ -88,16 +88,16 @@ function Invoke-ADOWorkItemsProcessing {
         $existingTargetUrl = $TargetWorkItemList.Value[$SourceWorkItem.'System.Id']
         $createdItem = $null
 
-            $originalState = $SourceWorkItem.'System.State'
-            $witType = $SourceWorkItem.'System.WorkItemType'
-            $autoMappedState = $null
-            if ($script:ADOStateAutoMap) {
-                $mappingKey = "$witType|$originalState"
-                if ($script:ADOStateAutoMap.ContainsKey($mappingKey)) {
-                    $autoMappedState = $script:ADOStateAutoMap[$mappingKey]
-                    if ($autoMappedState -and $autoMappedState -ne $originalState) { Write-PSFMessage -Level Verbose -Message "Auto-mapped '$originalState' -> '$autoMappedState' for type '$witType'." }
-                }
+        $originalState = $SourceWorkItem.'System.State'
+        $witType = $SourceWorkItem.'System.WorkItemType'
+        $autoMappedState = $null
+        if ($script:ADOStateAutoMap) {
+            $mappingKey = "$witType|$originalState"
+            if ($script:ADOStateAutoMap.ContainsKey($mappingKey)) {
+                $autoMappedState = $script:ADOStateAutoMap[$mappingKey]
+                if ($autoMappedState -and $autoMappedState -ne $originalState) { Write-PSFMessage -Level Verbose -Message "Auto-mapped '$originalState' -> '$autoMappedState' for type '$witType'." }
             }
+        }
 
         if (-not $existingTargetUrl) {
                 $creationBody = & $buildPatchBody $null
