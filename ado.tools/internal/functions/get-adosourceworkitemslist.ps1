@@ -101,7 +101,7 @@ function Get-ADOSourceWorkItemsList {
                         continue
                     }
                     Write-PSFMessage -Level Verbose -Message "Processing a batch of $($witBatch.Count) work item IDs."
-                    $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch -Fields $Fields -ApiVersion $ApiVersion -Expand Relations
+                    $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch <#-Fields $Fields#> -ApiVersion $ApiVersion -Expand Relations
                 }
                 if($wiResult.Count -eq 0) {
                     [pscustomobject[]]
