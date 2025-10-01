@@ -102,6 +102,58 @@
 			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipelineByPropertyName | Should -Be $False
 			$parameter.ParameterSets['__AllParameterSets'].ValueFromRemainingArguments | Should -Be $False
 		}
+		It 'Should have the expected parameter MigrateAttachments' {
+			$parameter = (Get-Command Invoke-ADOWorkItemDataMigration).Parameters['MigrateAttachments']
+			$parameter.Name | Should -Be 'MigrateAttachments'
+			$parameter.ParameterType.ToString() | Should -Be System.Boolean
+			$parameter.IsDynamic | Should -Be $False
+			$parameter.ParameterSets.Keys | Should -Be '__AllParameterSets'
+			$parameter.ParameterSets.Keys | Should -Contain '__AllParameterSets'
+			$parameter.ParameterSets['__AllParameterSets'].IsMandatory | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].Position | Should -Be 7
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipeline | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipelineByPropertyName | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromRemainingArguments | Should -Be $False
+		}
+		It 'Should have the expected parameter MigrateComments' {
+			$parameter = (Get-Command Invoke-ADOWorkItemDataMigration).Parameters['MigrateComments']
+			$parameter.Name | Should -Be 'MigrateComments'
+			$parameter.ParameterType.ToString() | Should -Be System.Boolean
+			$parameter.IsDynamic | Should -Be $False
+			$parameter.ParameterSets.Keys | Should -Be '__AllParameterSets'
+			$parameter.ParameterSets.Keys | Should -Contain '__AllParameterSets'
+			$parameter.ParameterSets['__AllParameterSets'].IsMandatory | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].Position | Should -Be 8
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipeline | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipelineByPropertyName | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromRemainingArguments | Should -Be $False
+		}
+		It 'Should have the expected parameter RewriteInlineAttachmentLinks' {
+			$parameter = (Get-Command Invoke-ADOWorkItemDataMigration).Parameters['RewriteInlineAttachmentLinks']
+			$parameter.Name | Should -Be 'RewriteInlineAttachmentLinks'
+			$parameter.ParameterType.ToString() | Should -Be System.Boolean
+			$parameter.IsDynamic | Should -Be $False
+			$parameter.ParameterSets.Keys | Should -Be '__AllParameterSets'
+			$parameter.ParameterSets.Keys | Should -Contain '__AllParameterSets'
+			$parameter.ParameterSets['__AllParameterSets'].IsMandatory | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].Position | Should -Be 9
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipeline | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipelineByPropertyName | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromRemainingArguments | Should -Be $False
+		}
+		It 'Should have the expected parameter DownloadInlineAttachments' {
+			$parameter = (Get-Command Invoke-ADOWorkItemDataMigration).Parameters['DownloadInlineAttachments']
+			$parameter.Name | Should -Be 'DownloadInlineAttachments'
+			$parameter.ParameterType.ToString() | Should -Be System.Boolean
+			$parameter.IsDynamic | Should -Be $False
+			$parameter.ParameterSets.Keys | Should -Be '__AllParameterSets'
+			$parameter.ParameterSets.Keys | Should -Contain '__AllParameterSets'
+			$parameter.ParameterSets['__AllParameterSets'].IsMandatory | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].Position | Should -Be 10
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipeline | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromPipelineByPropertyName | Should -Be $False
+			$parameter.ParameterSets['__AllParameterSets'].ValueFromRemainingArguments | Should -Be $False
+		}
 		It 'Should have the expected parameter ProgressAction' {
 			$parameter = (Get-Command Invoke-ADOWorkItemDataMigration).Parameters['ProgressAction']
 			$parameter.Name | Should -Be 'ProgressAction'
@@ -120,7 +172,7 @@
 	Describe "Testing parameterset __AllParameterSets" {
 		<#
 		__AllParameterSets -SourceOrganization -TargetOrganization -SourceToken -TargetToken -SourceProjectName -TargetProjectName -ApiVersion
-		__AllParameterSets -SourceOrganization -TargetOrganization -SourceToken -TargetToken -SourceProjectName -TargetProjectName -ApiVersion -ProgressAction
+		__AllParameterSets -SourceOrganization -TargetOrganization -SourceToken -TargetToken -SourceProjectName -TargetProjectName -ApiVersion -MigrateAttachments -MigrateComments -RewriteInlineAttachmentLinks -DownloadInlineAttachments -ProgressAction
 		#>
 	}
 

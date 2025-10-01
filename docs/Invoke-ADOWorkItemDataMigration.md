@@ -15,7 +15,9 @@ Migrates work items from source project into target project using tracking field
 ```
 Invoke-ADOWorkItemDataMigration [-SourceOrganization] <String> [-TargetOrganization] <String>
  [-SourceToken] <String> [-TargetToken] <String> [-SourceProjectName] <String> [-TargetProjectName] <String>
- [-ApiVersion] <String> [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-ApiVersion] <String> [[-MigrateAttachments] <Boolean>] [[-MigrateComments] <Boolean>]
+ [[-RewriteInlineAttachmentLinks] <Boolean>] [[-DownloadInlineAttachments] <Boolean>]
+ [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -143,6 +145,66 @@ Aliases:
 Required: True
 Position: 7
 Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -MigrateAttachments
+{{ Fill MigrateAttachments Description }}
+
+```yaml
+Type: Boolean
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 8
+Default value: True
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -MigrateComments
+{{ Fill MigrateComments Description }}
+
+```yaml
+Type: Boolean
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 9
+Default value: True
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -RewriteInlineAttachmentLinks
+{{ Fill RewriteInlineAttachmentLinks Description }}
+
+```yaml
+Type: Boolean
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 10
+Default value: True
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -DownloadInlineAttachments
+{{ Fill DownloadInlineAttachments Description }}
+
+```yaml
+Type: Boolean
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: 11
+Default value: True
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

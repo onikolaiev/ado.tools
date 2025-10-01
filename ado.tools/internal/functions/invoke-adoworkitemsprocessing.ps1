@@ -36,7 +36,7 @@
     .EXAMPLE
         Invoke-ADOWorkItemsProcessing -SourceWorkItem $wi -SourceOrganization src -SourceProjectName proj -SourceToken $patSrc `
             -TargetOrganization tgt -TargetProjectName proj2 -TargetToken $patTgt -TargetWorkItemList ([ref]$map)
-
+        
         Processes a single work item, creating it in the target if not already mapped, migrating attachments if enabled.
     .NOTES
         Author: Oleksandr Nikolaiev (@onikolaiev)
