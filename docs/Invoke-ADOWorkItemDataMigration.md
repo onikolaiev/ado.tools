@@ -150,7 +150,7 @@ Accept wildcard characters: False
 ```
 
 ### -MigrateAttachments
-{{ Fill MigrateAttachments Description }}
+When $true (default) downloads each source work item's attachment (relations rel='AttachedFile') and re-uploads them to the target, adding corresponding relations while avoiding duplicates by filename.
 
 ```yaml
 Type: Boolean
@@ -165,7 +165,7 @@ Accept wildcard characters: False
 ```
 
 ### -MigrateComments
-{{ Fill MigrateComments Description }}
+When $true (default) migrates work item comments (skipping duplicates by exact text, adding provenance header).
 
 ```yaml
 Type: Boolean
@@ -180,7 +180,7 @@ Accept wildcard characters: False
 ```
 
 ### -RewriteInlineAttachmentLinks
-{{ Fill RewriteInlineAttachmentLinks Description }}
+When $true (default) rewrites attachment URLs found inside Description and comments to the newly uploaded target attachment URLs (uses attachment GUID mapping).
 
 ```yaml
 Type: Boolean
@@ -195,7 +195,7 @@ Accept wildcard characters: False
 ```
 
 ### -DownloadInlineAttachments
-{{ Fill DownloadInlineAttachments Description }}
+When $true (default) and together with RewriteInlineAttachmentLinks, any inline-only attachment URLs (GUIDs not present in relations) are downloaded from source and uploaded to target before rewriting.
 
 ```yaml
 Type: Boolean

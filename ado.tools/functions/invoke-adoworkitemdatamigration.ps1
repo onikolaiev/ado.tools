@@ -27,6 +27,18 @@
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
         
+    .PARAMETER MigrateAttachments
+        When $true (default) downloads each source work item's attachment (relations rel='AttachedFile') and re-uploads them to the target, adding corresponding relations while avoiding duplicates by filename.
+        
+    .PARAMETER MigrateComments
+        When $true (default) migrates work item comments (skipping duplicates by exact text, adding provenance header).
+        
+    .PARAMETER RewriteInlineAttachmentLinks
+        When $true (default) rewrites attachment URLs found inside Description and comments to the newly uploaded target attachment URLs (uses attachment GUID mapping).
+        
+    .PARAMETER DownloadInlineAttachments
+        When $true (default) and together with RewriteInlineAttachmentLinks, any inline-only attachment URLs (GUIDs not present in relations) are downloaded from source and uploaded to target before rewriting.
+        
     .EXAMPLE
         $apiVersion = '7.1'
         $sourceOrg  = 'srcOrg'
