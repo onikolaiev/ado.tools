@@ -27,6 +27,18 @@
     .PARAMETER ApiVersion
         The version of the Azure DevOps REST API to use.
         
+    .PARAMETER MigrateAttachments
+        When $true (default) downloads each source work item's attachment (relations rel='AttachedFile') and re-uploads them to the target, adding corresponding relations while avoiding duplicates by filename.
+        
+    .PARAMETER MigrateComments
+        When $true (default) migrates work item comments (skipping duplicates by exact text, adding provenance header).
+        
+    .PARAMETER RewriteInlineAttachmentLinks
+        When $true (default) rewrites attachment URLs found inside Description and comments to the newly uploaded target attachment URLs (uses attachment GUID mapping).
+        
+    .PARAMETER DownloadInlineAttachments
+        When $true (default) and together with RewriteInlineAttachmentLinks, any inline-only attachment URLs (GUIDs not present in relations) are downloaded from source and uploaded to target before rewriting.
+        
     .EXAMPLE
         $apiVersion = '7.1'
         $sourceOrg  = 'srcOrg'
@@ -52,14 +64,41 @@ function Invoke-ADOWorkItemDataMigration {
         [Parameter(Mandatory)][string]$TargetToken,
         [Parameter(Mandatory)][string]$SourceProjectName,
         [Parameter(Mandatory)][string]$TargetProjectName,
-        [Parameter(Mandatory)][string]$ApiVersion
+        [Parameter(Mandatory)][string]$ApiVersion,
+        [Parameter()][bool]$MigrateAttachments = $true,
+        [Parameter()][bool]$MigrateComments = $true,
+        [Parameter()][bool]$RewriteInlineAttachmentLinks = $true,
+        [Parameter()][bool]$DownloadInlineAttachments = $true
     )
     Convert-FSCPSTextToAscii -Text "Migrate work items.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Starting work item migration from '$SourceProjectName' to '$TargetProjectName'."
-    $sourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -ApiVersion $ApiVersion
-    Write-PSFMessage -Level Verbose -Message "Loaded $($sourceItems.Count) source work items."
 
-    # Prefetch target items ONCE to avoid O(n^2) calls; build map of already migrated Source IDs
+    if ($script:ADOStateAutoMap.Count -eq 0 -or -not $script:ADOStateAutoMap) {
+        Write-PSFMessage -Level Verbose -Message "Initialized state auto-mapping dictionary."
+        $sourceProjecttmp = (Get-ADOProjectList -Organization $sourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -StateFilter All).Where({$_.name -eq $SourceProjectName})
+        if (-not $sourceProjecttmp) {
+            Write-PSFMessage -Level Error -Message "Source project '$SourceProjectName' not found in organization '$sourceOrganization'. Exiting."
+            return
+        }
+        $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $SourceToken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
+        $processResult = Invoke-ADOProcessMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $SourceToken -TargetToken $TargetToken -SourceProject $sourceProject -ApiVersion $ApiVersion
+        $sourceProjectProcess = $processResult.SourceProcess
+        $targetProjectProcess = $processResult.TargetProcess
+        $witResult = Invoke-ADOWorkItemTypeMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $SourceToken -TargetToken $TargetToken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
+        $sourceWitList = $witResult.SourceList
+        $targetWitList = $witResult.TargetList
+        Invoke-ADOWorkItemStateMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $SourceToken -TargetToken $TargetToken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+    }
+
+
+
+    $sourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -ApiVersion $ApiVersion
+    if ($sourceItems) {
+        # Ensure deterministic order: ascending by numeric System.Id
+        $sourceItems = $sourceItems | Sort-Object { [int]($_.'System.Id') }
+    }
+    Write-PSFMessage -Level Verbose -Message "Loaded $($sourceItems.Count) source work items (sorted ascending by System.Id)."
+
     $targetMap = @{}
     $existingTargetItems = Get-ADOSourceWorkItemsList -SourceOrganization $TargetOrganization -SourceProjectName $TargetProjectName -SourceToken $TargetToken -Fields @('System.Id','System.Title','System.Description','System.WorkItemType','System.State','System.Parent','Custom.SourceWorkitemId') -ApiVersion $ApiVersion
     if ($existingTargetItems) {
@@ -72,12 +111,12 @@ function Invoke-ADOWorkItemDataMigration {
     Write-PSFMessage -Level Verbose -Message "Found $initialMapped existing mapped work items in target (tracking field present)."
 
     $processed = 0
+    $skippedExisting = 0
     foreach ($item in $sourceItems) {
         $processed++
-        if ($targetMap.ContainsKey($item.'System.Id')) { continue }
-        Invoke-ADOWorkItemsProcessing -SourceWorkItem $item -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken -TargetWorkItemList ([ref]$targetMap) -ApiVersion $ApiVersion
+        Invoke-ADOWorkItemsProcessing -SourceWorkItem $item -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken -TargetWorkItemList ([ref]$targetMap) -ApiVersion $ApiVersion -MigrateAttachments:$MigrateAttachments -MigrateComments:$MigrateComments -RewriteInlineAttachmentLinks:$RewriteInlineAttachmentLinks -DownloadInlineAttachments:$DownloadInlineAttachments
     }
     $totalMapped = $targetMap.Count
     $createdThisRun = $totalMapped - $initialMapped
-    Write-PSFMessage -Level Host -Message "Completed work item migration. Total mapped: $totalMapped (created this run: $createdThisRun, pre-existing: $initialMapped)."
+    Write-PSFMessage -Level Host -Message "Completed work item migration. Total mapped: $totalMapped (created this run: $createdThisRun, pre-existing: $initialMapped, skipped existing: $skippedExisting)."
 }

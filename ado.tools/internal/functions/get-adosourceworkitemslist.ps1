@@ -55,8 +55,6 @@ function Get-ADOSourceWorkItemsList {
     )
 
     begin {
-        # Log the start of the operation
-        Write-PSFMessage -Level Verbose -Message "Starting retrieval of work items from project '$SourceProjectName' in organization '$SourceOrganization'."
         Invoke-TimeSignal -Start
     }
 
@@ -74,19 +72,16 @@ function Get-ADOSourceWorkItemsList {
             if($result.workItems.Count -gt 0)
             {
                 # Split the work item IDs into batches of 200
-                Write-PSFMessage -Level Verbose -Message "Splitting work item IDs into batches of 200."
                 $witListBatches = [System.Collections.ArrayList]::new()
                 $batch = @()
                 $result.workItems.id | ForEach-Object -Process {
                     $batch += $_
                     if ($batch.Count -eq 200) {
-                        Write-PSFMessage -Level Verbose -Message "Adding a batch of 200 work item IDs."
                         $null = $witListBatches.Add($batch)
                         $batch = @()
                     }
                 } -End {
                     if ($batch.Count -gt 0) {
-                        Write-PSFMessage -Level Verbose -Message "Adding the final batch of $($batch.Count) work item IDs."
                         $null = $witListBatches.Add($batch)
                     }
                 }
@@ -106,15 +101,12 @@ function Get-ADOSourceWorkItemsList {
                 if($wiResult.Count -eq 0) {
                     [pscustomobject[]]
                 } else {
-                    # Log the number of work items retrieved in detail
-                    Write-PSFMessage -Level Verbose -Message "Retrieved detailed information for $($wiResult.Count) work items."
-
                     # Format work items into a list
                     # Merge field selection with relations by iterating original work item objects
                     $sourceWorkItemsList = foreach ($wi in $wiResult) {
                         $f = $wi.fields
                         [PSCustomObject]@{
-                            "System.Id"               = $f."System.Id"
+                            "System.Id"               = $wi.id
                             "System.WorkItemType"     = $f."System.WorkItemType"
                             "System.Description"      = $f."System.Description"
                             "System.State"            = $f."System.State"
