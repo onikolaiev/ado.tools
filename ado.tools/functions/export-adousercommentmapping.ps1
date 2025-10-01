@@ -1,8 +1,8 @@
 
 <#
-        !
     .SYNOPSIS
         Exports a JSON template mapping of distinct source comment authors to target users for later migration.
+    
     .DESCRIPTION
         Scans all work item comments in a source Azure DevOps project, collects distinct author email addresses (unique case-insensitive),
         and produces a JSON file with entries:
@@ -47,21 +47,24 @@ function Export-ADOUserCommentMapping {
     )
 
     begin {
-        Write-PSFMessage -Level Host -Message "Building comment author mapping for project '$ProjectName' in org '$Organization'..."
+        $msg = "Building comment author mapping for project '{0}' in org '{1}'..." -f $ProjectName, $Organization
+        Write-PSFMessage -Level Host -Message $msg
     }
 
     process {
         try {
             $allIds = @()
-            # Re-use existing source work item enumerator if available
+            # Enumerate work item ids
             try {
                 $sourceItems = Get-ADOSourceWorkItemsList -SourceOrganization $Organization -SourceProjectName $ProjectName -SourceToken $Token -ApiVersion $ApiVersion
                 if ($sourceItems) { $allIds = $sourceItems.'System.Id' | Sort-Object -Unique }
             } catch {
-                Write-PSFMessage -Level Warning -Message "Failed to enumerate work items: $($_.Exception.Message)"; return
+                $warn = "Failed to enumerate work items. Error: {0}" -f $_.Exception.Message
+                Write-PSFMessage -Level Warning -Message $warn
+                return
             }
             if (-not $allIds -or $allIds.Count -eq 0) {
-                Write-PSFMessage -Level Warning -Message 'No work items found; mapping will be empty (except default node).'
+                Write-PSFMessage -Level Warning -Message 'No work items found; mapping will contain only the default node.'
             }
             $authors = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($wid in $allIds) {
@@ -71,43 +74,32 @@ function Export-ADOUserCommentMapping {
                         foreach ($c in $comments) {
                             $createdBy = $null
                             if ($c.createdBy) {
-                                # Try typical properties: uniqueName/email -> displayName fallback
                                 if ($c.createdBy.PSObject.Properties['uniqueName']) { $createdBy = $c.createdBy.uniqueName }
                                 elseif ($c.createdBy.PSObject.Properties['mailAddress']) { $createdBy = $c.createdBy.mailAddress }
                                 elseif ($c.createdBy.PSObject.Properties['displayName']) { $createdBy = $c.createdBy.displayName }
                             }
-                            if (-not [string]::IsNullOrWhiteSpace($createdBy)) { $null = $authors.Add($createdBy.Trim()) }
+                            $isEmptyAuthor = [string]::IsNullOrWhiteSpace($createdBy)
+                            if (-not $isEmptyAuthor) { $null = $authors.Add($createdBy.Trim()) }
                         }
                     }
                 } catch {
-                    Write-PSFMessage -Level Verbose -Message "Failed to load comments for work item $wid"
+                    Write-PSFMessage -Level Verbose -Message ("Failed to load comments for work item {0}" -f $wid)
                 }
             }
-            $list = @()
-            foreach ($a in $authors | Sort-Object) {
-                $list += [pscustomobject]@{
-                    sourceEmail = $a
-                    targetEmail = ''
-                    targetPat   = ''
-                }
+            $list = foreach ($a in ($authors | Sort-Object)) {
+                [pscustomobject]@{ sourceEmail = $a; targetEmail = ''; targetPat = '' }
             }
-            # Append default mapping node
-            $list += [pscustomobject]@{
-                sourceEmail = '@default_user'
-                targetEmail = ''
-                targetPat   = ''
-            }
+            $list += [pscustomobject]@{ sourceEmail = '@default_user'; targetEmail = ''; targetPat = '' }
             $json = $list | ConvertTo-Json -Depth 4
             $outFile = $OutputPath
-            # If OutputPath is a directory, append default filename
             if (Test-Path -LiteralPath $outFile -PathType Container) { $outFile = Join-Path $outFile 'ado.commentUserMapping.json' }
             if ((Test-Path -LiteralPath $outFile) -and -not $Force) {
-                throw "Output file '$outFile' already exists. Use -Force to overwrite."
+                throw ("Output file '{0}' already exists. Use -Force to overwrite." -f $outFile)
             }
             $json | Out-File -LiteralPath $outFile -Encoding UTF8 -Force
             Write-PSFMessage -Level Host -Message ("Comment author mapping exported to '{0}'. Entries: {1}." -f $outFile, $list.Count)
         } catch {
-            Write-PSFMessage -Level Error -Message "Export failed: $($_.Exception.Message)"
+            Write-PSFMessage -Level Error -Message ("Export failed. Error: {0}" -f $_.Exception.Message)
         }
     }
 }
