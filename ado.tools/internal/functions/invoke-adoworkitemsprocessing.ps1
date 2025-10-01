@@ -235,7 +235,7 @@ function Invoke-ADOWorkItemsProcessing {
                     $parentTarget = $TargetWorkItemList.Value[$SourceWorkItem.'System.Parent']
                     if ($parentTarget) {
                         try {
-                            if (-not $createdItem.relations) { try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {} }
+                            if (-not $createdItem.relations) { try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Silent refresh relations failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" } }
                             $hasParent = $false
                             if ($createdItem.relations) {
                                 $hasParent = ($createdItem.relations | Where-Object { $_.rel -eq 'System.LinkTypes.Hierarchy-Reverse' -and $_.url -eq $parentTarget })
@@ -248,7 +248,7 @@ function Invoke-ADOWorkItemsProcessing {
                                         @{ op='add'; path='/relations/-'; value=@{ rel='System.LinkTypes.Hierarchy-Reverse'; url=$parentTarget; attributes=@{ comment='Parent link (post-create)'} } }
                                     ) | ConvertTo-Json -Depth 6
                                     Update-ADOWorkItem -Organization $TargetOrganization -Token $TargetToken -Project $TargetProjectName -Id $createdItem.id -Body $patch -ApiVersion $ApiVersion | Out-Null
-                                    try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {}
+                                    try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Post-parent-add relations refresh failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                                     Write-PSFMessage -Level Verbose -Message "Added missing parent relation SourceID=$($SourceWorkItem.'System.Id') -> Parent=$($SourceWorkItem.'System.Parent')"
                                 } catch { Write-PSFMessage -Level Warning -Message "Failed to add parent relation SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                             }
@@ -371,7 +371,7 @@ function Invoke-ADOWorkItemsProcessing {
                                     @{ op='replace'; path='/fields/System.Description'; value=$descNew }
                                 ) | ConvertTo-Json -Depth 6
                                 Update-ADOWorkItem -Organization $TargetOrganization -Token $TargetToken -Project $TargetProjectName -Id $createdItem.id -Body $patchOps -ApiVersion $ApiVersion | Out-Null
-                                try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch {}
+                                try { $createdItem = Get-ADOWorkItem -Organization $TargetOrganization -Project $TargetProjectName -Token $TargetToken -Id $createdItem.id -Expand Relations -ApiVersion $ApiVersion } catch { Write-PSFMessage -Level Verbose -Message "Inline Description post-patch refresh failed SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                                 Write-PSFMessage -Level Verbose -Message "Rewrote inline attachment links in Description SourceID=$($SourceWorkItem.'System.Id')"
                             } catch { Write-PSFMessage -Level Warning -Message "Failed to patch Description inline links SourceID=$($SourceWorkItem.'System.Id'): $($_.Exception.Message)" }
                         }

@@ -102,8 +102,6 @@ function Invoke-ADOWorkItemDataMigration {
     $skippedExisting = 0
     foreach ($item in $sourceItems) {
         $processed++
-        $sid = $item.'System.Id'
-        #if ($targetMap.ContainsKey($sid)) { $skippedExisting++; continue }
         Invoke-ADOWorkItemsProcessing -SourceWorkItem $item -SourceOrganization $SourceOrganization -SourceProjectName $SourceProjectName -SourceToken $SourceToken -TargetOrganization $TargetOrganization -TargetProjectName $TargetProjectName -TargetToken $TargetToken -TargetWorkItemList ([ref]$targetMap) -ApiVersion $ApiVersion -MigrateAttachments:$MigrateAttachments -MigrateComments:$MigrateComments -RewriteInlineAttachmentLinks:$RewriteInlineAttachmentLinks -DownloadInlineAttachments:$DownloadInlineAttachments
     }
     $totalMapped = $targetMap.Count
