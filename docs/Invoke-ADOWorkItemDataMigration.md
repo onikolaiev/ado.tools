@@ -15,9 +15,7 @@ Migrates work items from source project into target project using tracking field
 ```
 Invoke-ADOWorkItemDataMigration [-SourceOrganization] <String> [-TargetOrganization] <String>
  [-SourceToken] <String> [-TargetToken] <String> [-SourceProjectName] <String> [-TargetProjectName] <String>
- [-ApiVersion] <String> [[-MigrateAttachments] <Boolean>] [[-MigrateComments] <Boolean>]
- [[-RewriteInlineAttachmentLinks] <Boolean>] [[-DownloadInlineAttachments] <Boolean>]
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-ApiVersion] <String> [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -145,66 +143,6 @@ Aliases:
 Required: True
 Position: 7
 Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -MigrateAttachments
-When $true (default) downloads each source work item's attachment (relations rel='AttachedFile') and re-uploads them to the target, adding corresponding relations while avoiding duplicates by filename.
-
-```yaml
-Type: Boolean
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 8
-Default value: True
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -MigrateComments
-When $true (default) migrates work item comments (skipping duplicates by exact text, adding provenance header).
-
-```yaml
-Type: Boolean
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 9
-Default value: True
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -RewriteInlineAttachmentLinks
-When $true (default) rewrites attachment URLs found inside Description and comments to the newly uploaded target attachment URLs (uses attachment GUID mapping).
-
-```yaml
-Type: Boolean
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 10
-Default value: True
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -DownloadInlineAttachments
-When $true (default) and together with RewriteInlineAttachmentLinks, any inline-only attachment URLs (GUIDs not present in relations) are downloaded from source and uploaded to target before rewriting.
-
-```yaml
-Type: Boolean
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: 11
-Default value: True
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
