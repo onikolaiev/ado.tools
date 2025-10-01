@@ -96,42 +96,38 @@ function Invoke-ADOProjectMigration {
         $sourceProject = Get-ADOProject -Organization $sourceOrganization -Token $sourceOrganizationtoken -ProjectId "$($sourceProjecttmp.id)" -IncludeCapabilities -ApiVersion $ApiVersion
         $sourceProjectVersionControl = $sourceProject.capabilities.versioncontrol
 
-        # PROCESS: ensure process exists in target
-        $processResult = Invoke-ADOProcessMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -ApiVersion $ApiVersion
-        $sourceProjectProcess = $processResult.SourceProcess
-        $targetProjectProcess = $processResult.TargetProcess
+        $cfg = Get-ADOSettings -OutputAsHashtable
 
-        # Custom fields (global)
-        Invoke-ADOCustomFieldMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -TargetProcessName $targetProjectProcess.name -ApiVersion $ApiVersion
+        $migrateProcess = $cfg.Migration.Process
+        $migrateWorkItems = $cfg.Migration.WorkItems
 
-        # Work item types
-        $witResult = Invoke-ADOWorkItemTypeMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
-        $sourceWitList = $witResult.SourceList
-        $targetWitList = $witResult.TargetList
+        # if work items migration is enabled, ensure process migration is also enabled
+        if ($migrateWorkItems) {
+            $migrateProcess = $true
+        }
+        # Process Migration
+        if ($migrateProcess) {
+            $processResult = Invoke-ADOProcessMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -ApiVersion $ApiVersion
+            $sourceProjectProcess = $processResult.SourceProcess
+            $targetProjectProcess = $processResult.TargetProcess
+            $witResult = Invoke-ADOWorkItemTypeMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
+            $sourceWitList = $witResult.SourceList
+            $targetWitList = $witResult.TargetList
 
-        # Assign fields to WITs
-        Invoke-ADOWorkItemTypeFieldMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+            Invoke-ADOCustomFieldMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -TargetProcessName $targetProjectProcess.name -ApiVersion $ApiVersion
+            Invoke-ADOWorkItemTypeFieldMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+            Invoke-ADOProcessBehaviorMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
+            Invoke-ADOPickListMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
+            Invoke-ADOWorkItemStateMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+            Invoke-ADOWorkItemRuleMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+            Invoke-ADOWorkItemLayoutMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
+            Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -TargetProcess $targetProjectProcess -TargetProjectName $TargetProjectName -SourceVersionControlCapabilities $sourceProjectVersionControl -ApiVersion $ApiVersion
+        }
 
-        # Behaviors
-        Invoke-ADOProcessBehaviorMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
-
-        # Picklists
-        Invoke-ADOPickListMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -TargetProcess $targetProjectProcess -ApiVersion $ApiVersion
-
-        # States
-        Invoke-ADOWorkItemStateMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
-
-        # Rules
-        Invoke-ADOWorkItemRuleMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
-
-        # Layouts
-        Invoke-ADOWorkItemLayoutMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
-
-        # Project create/update
-        Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -TargetProcess $targetProjectProcess -TargetProjectName $TargetProjectName -SourceVersionControlCapabilities $sourceProjectVersionControl -ApiVersion $ApiVersion
-
-        # Work items
-        Invoke-ADOWorkItemDataMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProjectName $sourceProject.name -TargetProjectName $TargetProjectName -ApiVersion $ApiVersion
+        # Work Items
+        if ($migrateWorkItems) {
+            Invoke-ADOWorkItemDataMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProjectName $sourceProject.name -TargetProjectName $TargetProjectName -ApiVersion $ApiVersion 
+        }
 
     }
     end{
