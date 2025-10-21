@@ -54,11 +54,11 @@ function Invoke-ADOWorkItemTypeMigration {
     
     Convert-FSCPSTextToAscii -Text "Migrate work item types.." -Font "Standard"
     Write-PSFMessage -Level Host -Message "Fetching custom work item types from source process '$($SourceProcess.name)'."
-    $sourceWits = (Get-ADOWorkItemTypeList -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessId $SourceProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited'})
+    $sourceWits = (Get-ADOWorkItemTypeList -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessId $SourceProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited' -or $_.customization -eq 'custom'} )
     Write-PSFMessage -Level Host -Message "Found $($sourceWits.Count) custom work item types in source process."
 
     Write-PSFMessage -Level Host -Message "Fetching custom work item types from target process '$($TargetProcess.name)'."
-    $targetWits = (Get-ADOWorkItemTypeList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited'})
+    $targetWits = (Get-ADOWorkItemTypeList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited' -or $_.customization -eq 'custom'})
     Write-PSFMessage -Level Host -Message "Found $($targetWits.Count) custom work item types in target process."
 
     foreach ($wit in $sourceWits) {
@@ -73,6 +73,6 @@ function Invoke-ADOWorkItemTypeMigration {
         }
     }
 
-    $targetWits = (Get-ADOWorkItemTypeList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited'})
+    $targetWits = (Get-ADOWorkItemTypeList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -Expand layout).Where({$_.customization -eq 'inherited' -or $_.customization -eq 'custom'})
     return @{ SourceList = $sourceWits; TargetList = $targetWits }
 }
