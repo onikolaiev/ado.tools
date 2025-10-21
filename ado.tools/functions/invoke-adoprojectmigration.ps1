@@ -98,8 +98,8 @@ function Invoke-ADOProjectMigration {
 
         $cfg = Get-ADOSettings -OutputAsHashtable
 
-        $migrateProcess = $cfg.Migration.Process
-        $migrateWorkItems = $cfg.Migration.WorkItems
+        $migrateProcess = $cfg."Migration.Process"
+        $migrateWorkItems = $cfg."Migration.WorkItems"
 
         # if work items migration is enabled, ensure process migration is also enabled
         if ($migrateWorkItems) {
