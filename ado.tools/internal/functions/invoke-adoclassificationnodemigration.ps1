@@ -51,7 +51,9 @@
         Author: Oleksandr Nikolaiev (@onikolaiev)
 #>
 function Invoke-ADOClassificationNodeMigration {
-    [CmdletBinding()] param(
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
         [Parameter(Mandatory)][string]$SourceToken,
@@ -59,8 +61,8 @@ function Invoke-ADOClassificationNodeMigration {
         [Parameter(Mandatory)][string]$SourceProjectName,
         [Parameter(Mandatory)][string]$TargetProjectName,
         [Parameter()][string]$ApiVersion = '7.2-preview.2',
-        [Parameter()][switch]$IncludeAreas = $true,
-        [Parameter()][switch]$IncludeIterations = $true
+        [Parameter()][switch]$IncludeAreas,
+        [Parameter()][switch]$IncludeIterations
     )
 
     begin {
@@ -68,6 +70,12 @@ function Invoke-ADOClassificationNodeMigration {
         $migratedCount = 0
         $skippedCount = 0
         $errorCount = 0
+        
+        # Set default behavior: include both Areas and Iterations if neither is explicitly specified
+        if (-not $IncludeAreas -and -not $IncludeIterations) {
+            $IncludeAreas = $true
+            $IncludeIterations = $true
+        }
     }
 
     process {

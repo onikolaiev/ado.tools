@@ -40,7 +40,9 @@
 #>
 
 function Invoke-ADOClassificationNodeMigrationRecursive {
-    [CmdletBinding()] param(
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
         [Parameter(Mandatory)][string]$SourceOrganization,
         [Parameter(Mandatory)][string]$TargetOrganization,
         [Parameter(Mandatory)][string]$SourceToken,
