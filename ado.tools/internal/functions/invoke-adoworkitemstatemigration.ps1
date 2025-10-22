@@ -72,9 +72,78 @@ function Invoke-ADOWorkItemStateMigration {
             $sourceState = Get-ADOWorkItemTypeState -Organization $SourceOrganization -Token $SourceToken -ApiVersion $ApiVersion -ProcessId $SourceProcess.typeId -WitRefName $wit.referenceName -StateId $state.id
             if (-not $existing) {
                 Write-PSFMessage -Level Host -Message "State '$($state.name)' does not exist. Adding."
-                $body = @{ name=$sourceState.name; color=$sourceState.color; stateCategory=$sourceState.stateCategory; order=$sourceState.order } | ConvertTo-Json -Depth 10
-                Write-PSFMessage -Level Verbose -Message "Adding state '$($sourceState.name)' to target process '$($TargetProcess.name)' with body: $body"
+                
+                # Calculate correct order based on existing states and categories
+                $targetCategory = $sourceState.stateCategory
+                
+                # Find existing states in the same category
+                $sameCategory = $targetStates | Where-Object { $_.stateCategory -eq $targetCategory }
+                
+                if ($sameCategory) {
+                    # Add after the last state in the same category
+                    $maxOrderInCategory = ($sameCategory | Measure-Object -Property order -Maximum).Maximum
+                    $newOrder = $maxOrderInCategory + 1
+                    Write-PSFMessage -Level Verbose -Message "Adding state to existing category '$targetCategory' with order $newOrder"
+                } else {
+                    # New category - try to find the right position by analyzing source order
+                    $sourceStatesSorted = $sourceStates | Sort-Object order
+                    $currentStateIndex = 0
+                    for ($i = 0; $i -lt $sourceStatesSorted.Count; $i++) {
+                        if ($sourceStatesSorted[$i].name -eq $sourceState.name) {
+                            $currentStateIndex = $i
+                            break
+                        }
+                    }
+                    
+                    # Look for existing target categories that come before this state in source
+                    $insertAfterOrder = 0
+                    for ($i = $currentStateIndex - 1; $i -ge 0; $i--) {
+                        $prevSourceState = $sourceStatesSorted[$i]
+                        $prevTargetStates = $targetStates | Where-Object { $_.stateCategory -eq $prevSourceState.stateCategory }
+                        if ($prevTargetStates) {
+                            $insertAfterOrder = ($prevTargetStates | Measure-Object -Property order -Maximum).Maximum
+                            break
+                        }
+                    }
+                    
+                    # Look for existing target categories that come after this state in source  
+                    $insertBeforeOrder = [int]::MaxValue
+                    for ($i = $currentStateIndex + 1; $i -lt $sourceStatesSorted.Count; $i++) {
+                        $nextSourceState = $sourceStatesSorted[$i]
+                        $nextTargetStates = $targetStates | Where-Object { $_.stateCategory -eq $nextSourceState.stateCategory }
+                        if ($nextTargetStates) {
+                            $insertBeforeOrder = ($nextTargetStates | Measure-Object -Property order -Minimum).Minimum
+                            break
+                        }
+                    }
+                    
+                    if ($insertBeforeOrder -eq [int]::MaxValue) {
+                        # Add at the end
+                        $newOrder = $insertAfterOrder + 1
+                    } else {
+                        # Insert between categories
+                        $newOrder = $insertAfterOrder + 1
+                        if ($newOrder -ge $insertBeforeOrder) {
+                            Write-PSFMessage -Level Warning -Message "Cannot insert state '$($sourceState.name)' between existing categories. Adding at end."
+                            $maxOrder = ($targetStates | Measure-Object -Property order -Maximum).Maximum
+                            $newOrder = $maxOrder + 1
+                        }
+                    }
+                    Write-PSFMessage -Level Verbose -Message "Adding state to new category '$targetCategory' with order $newOrder (between $insertAfterOrder and $insertBeforeOrder)"
+                }
+                
+                $body = @{ 
+                    name = $sourceState.name
+                    color = $sourceState.color
+                    stateCategory = $sourceState.stateCategory
+                    order = $newOrder
+                } | ConvertTo-Json -Depth 10
+                Write-PSFMessage -Level Verbose -Message "Adding state '$($sourceState.name)' to target process '$($TargetProcess.name)' with calculated order $newOrder (category: $($sourceState.stateCategory)). Body: $body"
                 $new = Add-ADOWorkItemTypeState -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName -Body $body
+                # Refresh target states list after adding new state
+                if ($new) {
+                    $targetStates = Get-ADOWorkItemTypeStateList -Organization $TargetOrganization -Token $TargetToken -ApiVersion $ApiVersion -ProcessId $TargetProcess.typeId -WitRefName $targetWit.referenceName
+                }
             } else { $new = $existing }
             if ($sourceState.hidden -and $sourceState.customizationType -eq "system") {
                 try {
