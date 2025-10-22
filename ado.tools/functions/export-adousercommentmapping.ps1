@@ -2,7 +2,7 @@
 <#
     .SYNOPSIS
         Exports a JSON template mapping of distinct source comment authors to target users for later migration.
-    
+        
     .DESCRIPTION
         Scans all work item comments in a source Azure DevOps project, collects distinct author email addresses (unique case-insensitive),
         and produces a JSON file with entries:

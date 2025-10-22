@@ -99,7 +99,7 @@ function Get-ADOSourceWorkItemsList {
                     $wiResult += Get-ADOWorkItemsBatch -Organization $SourceOrganization -Token $SourceToken -Project $SourceProjectName -Ids $witBatch <#-Fields $Fields#> -ApiVersion $ApiVersion -Expand Relations
                 }
                 if($wiResult.Count -eq 0) {
-                    [pscustomobject[]]
+                   return [pscustomobject[]]@()
                 } else {
                     # Format work items into a list
                     # Merge field selection with relations by iterating original work item objects
@@ -127,7 +127,7 @@ function Get-ADOSourceWorkItemsList {
                 }                
             }
             else {
-                 [pscustomobject[]]
+                return [pscustomobject[]]@()
             }
             
         } catch {
