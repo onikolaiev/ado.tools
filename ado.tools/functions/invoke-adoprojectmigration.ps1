@@ -100,6 +100,7 @@ function Invoke-ADOProjectMigration {
 
         $migrateProcess = $cfg."Migration.Process"
         $migrateWorkItems = $cfg."Migration.WorkItems"
+        $migrateClassificationNodes = $cfg."Migration.ClassificationNodes"
 
         # if work items migration is enabled, ensure process migration is also enabled
         if ($migrateWorkItems) {
@@ -122,6 +123,11 @@ function Invoke-ADOProjectMigration {
             Invoke-ADOWorkItemRuleMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
             Invoke-ADOWorkItemLayoutMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProcess $sourceProjectProcess -TargetProcess $targetProjectProcess -SourceWitList $sourceWitList -TargetWitList $targetWitList -ApiVersion $ApiVersion
             Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -TargetProcess $targetProjectProcess -TargetProjectName $TargetProjectName -SourceVersionControlCapabilities $sourceProjectVersionControl -ApiVersion $ApiVersion
+        }
+        
+        # Classification Nodes (Areas and Iterations)
+        if ($migrateClassificationNodes) {
+            Invoke-ADOClassificationNodeMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProjectName $sourceProject.name -TargetProjectName $TargetProjectName -ApiVersion $ApiVersion
         }
 
         # Work Items
