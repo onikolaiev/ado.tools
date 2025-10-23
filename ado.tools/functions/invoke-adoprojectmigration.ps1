@@ -101,6 +101,7 @@ function Invoke-ADOProjectMigration {
         $migrateProcess = $cfg."Migration.Process"
         $migrateWorkItems = $cfg."Migration.WorkItems"
         $migrateClassificationNodes = $cfg."Migration.ClassificationNodes"
+        $migrateTeams = $cfg."Migration.Teams"
 
         # if work items migration is enabled, ensure process migration is also enabled
         if ($migrateWorkItems) {
@@ -125,10 +126,17 @@ function Invoke-ADOProjectMigration {
             Invoke-ADOProjectStructureMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProject $sourceProject -TargetProcess $targetProjectProcess -TargetProjectName $TargetProjectName -SourceVersionControlCapabilities $sourceProjectVersionControl -ApiVersion $ApiVersion
         }
         
+        # Teams Migration
+        if ($migrateTeams) {
+            Invoke-ADOTeamMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProjectName $sourceProject.name -TargetProjectName $TargetProjectName -ApiVersion $ApiVersion
+        }
+        
         # Classification Nodes (Areas and Iterations)
         if ($migrateClassificationNodes) {
             Invoke-ADOClassificationNodeMigration -SourceOrganization $sourceOrganization -TargetOrganization $targetOrganization -SourceToken $sourceOrganizationtoken -TargetToken $targetOrganizationtoken -SourceProjectName $sourceProject.name -TargetProjectName $TargetProjectName -ApiVersion $ApiVersion
         }
+
+
 
         # Work Items
         if ($migrateWorkItems) {

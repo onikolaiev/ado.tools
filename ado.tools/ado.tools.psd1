@@ -52,7 +52,7 @@ PowerShellVersion = '5.0'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(@{ModuleName = 'PSFramework'; ModuleVersion = '1.12.346'; }, 
-                    @{ModuleName = 'ado.core'; ModuleVersion = '1.0.17'; })
+                    @{ModuleName = 'ado.core'; ModuleVersion = '1.0.18'; })
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
