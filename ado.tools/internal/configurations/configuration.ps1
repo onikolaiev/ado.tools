@@ -21,3 +21,4 @@ Set-PSFConfig -Module 'ado.tools' -Name 'settings.Migration.Attachments'     -Va
 Set-PSFConfig -Module 'ado.tools' -Name 'settings.Migration.Comments'     -Value $true  -Initialize -Validation 'bool' -Description 'Enable comments migration.'
 Set-PSFConfig -Module 'ado.tools' -Name 'settings.Migration.Users'     -Value $true  -Initialize -Validation 'bool' -Description 'Enable custom field migration.'
 Set-PSFConfig -Module 'ado.tools' -Name 'settings.Migration.ClassificationNodes' -Value $true -Initialize -Validation 'bool' -Description 'Enable classification nodes (Areas and Iterations) migration.'
+Set-PSFConfig -Module 'ado.tools' -Name 'settings.Migration.Teams' -Value $true -Initialize -Validation 'bool' -Description 'Enable teams migration.'
